@@ -232,13 +232,13 @@ router.delete('/users/:id', async (req, res) => {
 
 /**
  * PUT /api/admin/users/:id
- * Update user name and/or email
+ * Update user name, email, and/or admin privileges
  * SECURITY FIX: Uses fixed SQL structure instead of dynamic construction
  */
 router.put('/users/:id', async (req, res) => {
   try {
     const userId = parseInt(req.params.id, 10);
-    const { name, email } = req.body;
+    const { name, email, isAdmin } = req.body;
 
     if (isNaN(userId)) {
       res.status(400).json({ error: 'Invalid user ID' });
@@ -253,8 +253,13 @@ router.put('/users/:id', async (req, res) => {
       return;
     }
 
+    if (isAdmin !== undefined && typeof isAdmin !== 'boolean') {
+      res.status(400).json({ error: 'Admin privileges must be a boolean' });
+      return;
+    }
+
     // Validate at least one field is provided
-    if (!name && !email) {
+    if (!name && !email && isAdmin === undefined) {
       res.status(400).json({ error: 'At least one field (name or email) is required' });
       return;
     }
@@ -289,19 +294,32 @@ router.put('/users/:id', async (req, res) => {
       }
     }
 
-    // SECURITY FIX: Use fixed SQL structure instead of dynamic construction
-    // This prevents SQL injection by avoiding string concatenation in SQL
-    if (sanitizedName && sanitizedEmail) {
-      db.prepare('UPDATE users SET name = ?, email = ? WHERE id = ?').run(
-        sanitizedName,
-        sanitizedEmail,
-        userId
-      );
-    } else if (sanitizedName) {
-      db.prepare('UPDATE users SET name = ? WHERE id = ?').run(sanitizedName, userId);
-    } else if (sanitizedEmail) {
-      db.prepare('UPDATE users SET email = ? WHERE id = ?').run(sanitizedEmail, userId);
+    if (user.is_admin && isAdmin === false) {
+      const adminCountRow = db
+        .prepare<[], { admin_count: number }>('SELECT COUNT(*) AS admin_count FROM users WHERE is_admin = 1')
+        .get();
+      if (!adminCountRow) {
+        throw new Error('Failed to count administrators');
+      }
+      if (adminCountRow.admin_count <= 1) {
+        res.status(400).json({ error: 'Cannot remove admin privileges from the last administrator' });
+        return;
+      }
     }
+
+    // Keep SQL structure fixed while only updating fields supplied by the caller.
+    db.prepare(
+      `UPDATE users SET
+        name = COALESCE(?, name),
+        email = COALESCE(?, email),
+        is_admin = COALESCE(?, is_admin)
+      WHERE id = ?`
+    ).run(
+      sanitizedName,
+      sanitizedEmail,
+      isAdmin === undefined ? null : isAdmin ? 1 : 0,
+      userId
+    );
 
     // Get updated user
     const updatedUser = db

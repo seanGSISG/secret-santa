@@ -18,7 +18,7 @@ import type { AdminUser, CreateUserRequest, UpdateUserRequest } from '@/types';
 import { translate } from '@/lib/i18n';
 
 export function AdminPage() {
-  const { user, wishlistEnabled, language, setDrawParticipation } = useAuth();
+  const { user, wishlistEnabled, language, setDrawParticipation, logout } = useAuth();
   const {
     users,
     loadingUsers,
@@ -71,7 +71,12 @@ export function AdminPage() {
   ): Promise<{ password?: string }> => {
     if (selectedUser) {
       // Edit mode
-      await updateUser(selectedUser.id, data as UpdateUserRequest);
+      const updateData = data as UpdateUserRequest;
+      await updateUser(selectedUser.id, updateData);
+      if (selectedUser.id === user?.id && updateData.isAdmin === false) {
+        toast.success(translate(language, 'Admin privileges removed; you have been signed out.'));
+        await logout();
+      }
       return {};
     } else {
       // Create mode

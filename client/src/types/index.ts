@@ -101,6 +101,7 @@ export interface CreateUserResponse {
 export interface UpdateUserRequest {
   name?: string;
   email?: string;
+  isAdmin?: boolean;
 }
 
 export interface UpdateUserResponse {

@@ -72,6 +72,7 @@ export function UserForm({ open, onOpenChange, user, onSubmit }: UserFormProps) 
         const updateData: UpdateUserRequest = {};
         if (name !== user.name) updateData.name = name;
         if (email !== user.email) updateData.email = email;
+        if (isAdmin !== user.isAdmin) updateData.isAdmin = isAdmin;
 
         if (Object.keys(updateData).length === 0) {
           setError(translate(language, 'No changes detected'));
@@ -217,21 +218,21 @@ export function UserForm({ open, onOpenChange, user, onSubmit }: UserFormProps) 
                       </p>
                     </div>
                   )}
-
-                  <div className="flex items-center space-x-2 pt-2">
-                    <input
-                      type="checkbox"
-                      id="isAdmin"
-                      checked={isAdmin}
-                      onChange={(e) => setIsAdmin(e.target.checked)}
-                      className="h-4 w-4 rounded border-gray-300"
-                    />
-                    <Label htmlFor="isAdmin" className="cursor-pointer">
-                      {translate(language, 'Grant admin privileges')}
-                    </Label>
-                  </div>
                 </>
               )}
+
+              <div className="flex items-center space-x-2 pt-2">
+                <input
+                  type="checkbox"
+                  id="isAdmin"
+                  checked={isAdmin}
+                  onChange={(e) => setIsAdmin(e.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300"
+                />
+                <Label htmlFor="isAdmin" className="cursor-pointer">
+                  {translate(language, 'Administrator privileges')}
+                </Label>
+              </div>
 
               {error && (
                 <Alert variant="destructive">

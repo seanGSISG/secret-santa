@@ -237,6 +237,10 @@ const translations: Record<string, string> = {
   'Enter manual password': 'Saisissez un mot de passe',
   'Note: You are responsible for sharing this password with the user.': 'Vous devrez transmettre ce mot de passe à la personne.',
   'Grant admin privileges': 'Donner les droits d’administration',
+  'Administrator privileges': 'Droits d’administration',
+  'Admin privileges must be a boolean': 'Les droits d’administration doivent être un booléen.',
+  'Cannot remove admin privileges from the last administrator': 'Impossible de retirer les droits au dernier administrateur.',
+  'Admin privileges removed; you have been signed out.': 'Droits d’administration retirés ; vous avez été déconnecté·e.',
 };
 
 export function translate(language: Language, message: string): string {
