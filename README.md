@@ -169,6 +169,11 @@ Email notifications let participants know when matches are assigned and when wis
    EMAIL_USER=your-gmail@gmail.com
    EMAIL_PASS=abcdefghijklmnop
 
+   # Optional: use your SMTP server instead of Gmail
+   SMTP_HOST=smtp.example.com
+   SMTP_PORT=587
+   SMTP_SECURE=false
+
    # Optional: customize the sender address without changing SMTP login credentials
    EMAIL_FROM=santa@example.com
 
@@ -176,7 +181,21 @@ Email notifications let participants know when matches are assigned and when wis
    ENABLE_WISHLIST=false
 
    # Optional: domains allowed to self-register (comma-separated)
-   ALLOWED_EMAIL_DOMAINS=example.com,molinier.io
+   ALLOWED_EMAIL_DOMAINS=example.com,example.org
+
+   # Optional: public display name and event text
+   PAGE_TITLE=Secret Santa révèle
+   GAME_TITLE=Secret Santa
+   GAME_SUBTITLE_FR=Inscrivez-vous et partagez la joie des cadeaux.
+   GAME_SUBTITLE_EN=Sign up and share the joy of giving.
+   WELCOME_MESSAGE_FR=Bienvenue ! Inscrivez-vous pour participer.
+   WELCOME_MESSAGE_EN=Welcome! Sign up to take part.
+   REGISTRATION_RULES_FR="Inscription avec une adresse e-mail @example.com.\nLimite de dépense : 30 €."
+   REGISTRATION_RULES_EN="Register with an @example.com email address.\nSpending limit: €30."
+   GIFT_SPENDING_LIMIT_EUR=30
+
+   # Optional: show dates on the welcome and registration pages (JSON, ISO dates)
+   EVENT_MILESTONES=[{"label":{"fr":"Fin des inscriptions","en":"Registration deadline"},"date":"2026-11-20"}]
    ```
 
    > **Note:** Remove any spaces from the App Password
@@ -188,6 +207,33 @@ Email notifications let participants know when matches are assigned and when wis
    > Set `ENABLE_WISHLIST=false` to hide wishlist features and remove wishlist
    > references from notification emails. `EMAIL_FROM` changes the visible sender;
    > SMTP login continues to use `EMAIL_USER` and `EMAIL_PASS`.
+   > When `SMTP_HOST` is set, the app uses SMTP instead of Gmail. Use
+   > `SMTP_SECURE=false` with port 587 (STARTTLS) or `SMTP_SECURE=true` with
+   > port 465 (implicit TLS).
+   >
+   > The app is available in French and English. New participants get a language
+   > preselected from their browser settings and can change it during registration
+   > or later from their account menu. Set `PAGE_TITLE`, `GAME_TITLE`,
+   > `GAME_SUBTITLE_FR`/`GAME_SUBTITLE_EN`, and `WELCOME_MESSAGE_FR`/`WELCOME_MESSAGE_EN`
+   > to customize the welcome screens. `EVENT_MILESTONES` accepts up to 10 JSON
+   > objects with bilingual labels and `YYYY-MM-DD` dates; a string label is also
+   > accepted when the same text should appear in both languages.
+   > `REGISTRATION_RULES_FR` and `REGISTRATION_RULES_EN` optionally show custom
+   > participation rules on the registration page. Put any email-domain rule
+   > you want participants to see in that text; allowed domains are never
+   > disclosed automatically. `GIFT_SPENDING_LIMIT_EUR` optionally sets the
+   > spending limit displayed in the post-registration reminder; enter a
+   > non-negative amount in euros. Registration also records each participant's
+   > second-hand/handmade gift preference (checked by default), visible in the
+   > admin user list and included in match emails.
+   > Administrators can exclude themselves from the draw in the admin panel.
+   > Excluded accounts are neither assigned a recipient nor given as a recipient.
+   > Changing this setting clears the current year's matches; generate the draw again.
+   >
+   > Email copy is stored in `server/templates/emails/` in paired files such as
+   > `registration.en.html`, `registration.fr.html`, `account-deleted.en.html`, and
+   > `account-deleted.fr.html`. Templates use `{{name}}`
+   > placeholders and `{{#if wishlistEnabled}}...{{/if}}` conditional sections.
 
 ---
 

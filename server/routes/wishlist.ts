@@ -129,7 +129,13 @@ router.post('/', requireAuth, async (req, res) => {
         if (santa && giftee && santa.email) {
           console.log(`Sending wishlist update email to ${santa.email}...`);
           // Don't await this to avoid blocking the response
-          sendWishlistUpdateEmail(santa.email, santa.name, giftee.name, productInfo.title || 'New Item')
+          sendWishlistUpdateEmail(
+            santa.email,
+            santa.name,
+            giftee.name,
+            productInfo.title || 'New Item',
+            santa.language,
+          )
             .then(() => console.log(`Wishlist email sent to ${santa.email}`))
             .catch(e => console.error('Failed to send wishlist email', e));
         } else {

@@ -23,7 +23,7 @@ import adminRoutes from './routes/admin.js';
 
 // Import middleware for session cleanup
 import { cleanupExpiredSessions } from './middleware/auth.js';
-import { isWishlistEnabled } from './utils/features.js';
+import { getPublicConfig } from './utils/publicConfig.js';
 
 
 const app = express();
@@ -60,7 +60,12 @@ app.use('/api/wishlist', wishlistRoutes);
 app.use('/api/admin', adminRoutes);
 
 app.get('/api/config', (_req, res) => {
-  res.json({ wishlistEnabled: isWishlistEnabled() });
+  try {
+    res.json(getPublicConfig());
+  } catch (error) {
+    console.error('Invalid public configuration:', error);
+    res.status(500).json({ error: 'La configuration publique du serveur est invalide.' });
+  }
 });
 
 // Health check endpoint

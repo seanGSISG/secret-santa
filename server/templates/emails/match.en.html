@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Your Secret Santa match is ready! 🎁</title>
+  </head>
+  <body style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto;">
+    <h1 style="color: #c41e3a;">Ho ho ho, {{name}}! 🎅</h1>
+    <p>The elves have worked their magic: your Secret Santa match is ready.</p>
+    <p style="font-size: 18px; background-color: #f0fdf4; padding: 20px; border-radius: 8px; border: 1px solid #1a472a; text-align: center;">
+      You are giving a gift to <strong>{{matchName}}</strong>! 🎄
+    </p>
+    {{#if recipientPrefersSecondhand}}<div style="margin: 18px 0; padding: 16px; border: 1px solid #86efac; border-radius: 10px; background-color: #f0fdf4; color: #166534; text-align: center;">
+      <p style="margin: 0; font-size: 17px; font-weight: bold;">♻️ {{matchName}} prefers a second-hand, upcycled, or handmade gift.</p>
+    </div>{{/if}}
+    {{#if recipientDoesNotPreferSecondhand}}<div style="margin: 18px 0; padding: 16px; border: 1px solid #fca5a5; border-radius: 10px; background-color: #fef2f2; color: #991b1b; text-align: center;">
+      <p style="margin: 0; font-size: 17px;">{{matchName}} does <strong>not</strong> prefer a second-hand, upcycled, or handmade gift.</p>
+    </div>{{/if}}
+    <p>Their email address: <a href="mailto:{{matchEmail}}">{{matchEmail}}</a></p>
+    <p>Visit <a href="{{appUrl}}" style="color: #1a472a; font-weight: bold;">Secret Santa</a>{{#if wishlistEnabled}} to view their wishlist and get gift ideas{{/if}}.</p>
+    <p>Happy holidays!</p>
+  </body>
+</html>

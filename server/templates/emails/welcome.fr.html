@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8">
+    <title>Bienvenue dans Secret Santa ! 🎄</title>
+  </head>
+  <body style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto;">
+    <h1 style="color: #1a472a;">Bienvenue, {{name}} ! 🦌</h1>
+    <p>Vous êtes invité·e à participer à notre Secret Santa.</p>
+    {{#if passwordProvided}}<p>Votre mot de passe temporaire est : <strong style="font-size: 18px; background-color: #f3f4f6; padding: 4px 8px; border-radius: 4px;">{{password}}</strong></p>{{/if}}
+    <p>Connectez-vous sur <a href="{{appUrl}}" style="color: #c41e3a; font-weight: bold;">Secret Santa</a> pour utiliser votre mot de passe{{#if wishlistEnabled}} et créer votre liste de cadeaux{{/if}}.</p>
+    <p>Joyeuses fêtes !</p>
+  </body>
+</html>

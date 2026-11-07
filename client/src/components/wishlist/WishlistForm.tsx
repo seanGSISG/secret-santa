@@ -5,31 +5,34 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useAuth } from '@/hooks/useAuth';
+import { translate } from '@/lib/i18n';
 
 interface WishlistFormProps {
   onAdd: (url: string) => Promise<void>;
 }
 
 export function WishlistForm({ onAdd }: WishlistFormProps) {
+  const { language } = useAuth();
   const [url, setUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const validateUrl = (value: string): boolean => {
     if (!value.trim()) {
-      setError('Please enter an Amazon URL');
+      setError(translate(language, 'Please enter an Amazon URL'));
       return false;
     }
 
     try {
       const urlObj = new URL(value);
       if (!urlObj.hostname.includes('amazon.com')) {
-        setError('Please enter a valid Amazon.com URL');
+        setError(translate(language, 'Please enter a valid Amazon.com URL'));
         return false;
       }
       return true;
     } catch {
-      setError('Please enter a valid URL');
+      setError(translate(language, 'Please enter a valid URL'));
       return false;
     }
   };
@@ -51,7 +54,7 @@ export function WishlistForm({ onAdd }: WishlistFormProps) {
       if (err instanceof Error) {
         setError(err.message);
       } else {
-        setError('Failed to add item to wishlist');
+        setError(translate(language, 'Failed to add item to wishlist'));
       }
     } finally {
       setLoading(false);
@@ -61,12 +64,12 @@ export function WishlistForm({ onAdd }: WishlistFormProps) {
   return (
     <Card className="border-[#e5e0d8]">
       <CardHeader>
-        <CardTitle className="text-xl text-gray-900">Add Wishlist Item</CardTitle>
+        <CardTitle className="text-xl text-gray-900">{translate(language, 'Add Wishlist Item')}</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="amazon-url">Amazon Product URL</Label>
+            <Label htmlFor="amazon-url">{translate(language, 'Amazon Product URL')}</Label>
             <Input
               id="amazon-url"
               type="url"
@@ -80,7 +83,7 @@ export function WishlistForm({ onAdd }: WishlistFormProps) {
               className="border-gray-300 focus-visible:ring-[#1a472a]"
             />
             <p className="text-sm text-gray-500">
-              Paste the URL of any Amazon product you'd like to add to your wishlist
+              {translate(language, "Paste the URL of any Amazon product you'd like to add to your wishlist")}
             </p>
           </div>
 
@@ -98,12 +101,12 @@ export function WishlistForm({ onAdd }: WishlistFormProps) {
             {loading ? (
               <>
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-                Adding Item...
+                {translate(language, 'Adding Item...')}
               </>
             ) : (
               <>
                 <Plus className="w-4 h-4 mr-2" />
-                Add to Wishlist
+                {translate(language, 'Add to Wishlist')}
               </>
             )}
           </Button>

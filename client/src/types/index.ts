@@ -4,6 +4,27 @@ export interface User {
   name: string;
   isAdmin: boolean;
   hasSeenReveal: boolean;
+  language: Language;
+  secondhandPreference: boolean;
+  participatesInDraw: boolean;
+}
+
+export type Language = 'fr' | 'en';
+
+export interface EventMilestone {
+  label: Record<Language, string>;
+  date: string;
+}
+
+export interface PublicConfig {
+  wishlistEnabled: boolean;
+  pageTitle: string;
+  gameTitle: string;
+  subtitle: Record<Language, string>;
+  welcomeMessage: Record<Language, string>;
+  registrationRules: Record<Language, string>;
+  milestones: EventMilestone[];
+  spendingLimitEur: number | null;
 }
 
 export interface Match {
@@ -55,6 +76,9 @@ export interface AdminUser {
   name: string;
   isAdmin: boolean;
   hasSeenReveal: boolean;
+  language: Language;
+  secondhandPreference: boolean;
+  participatesInDraw: boolean;
   createdAt: string;
 }
 

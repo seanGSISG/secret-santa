@@ -5,6 +5,10 @@ import { Gift, Sparkles, TreePine } from 'lucide-react';
 import { FestiveParade } from '@/components/layout/FestiveParade';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { EventMilestones } from '@/components/layout/EventMilestones';
+import { SpendingLimit } from '@/components/layout/SpendingLimit';
+import { translate } from '@/lib/i18n';
+import { Button } from '@/components/ui/button';
 
 // Animation variants for staggered reveal
 const containerVariants = {
@@ -28,7 +32,7 @@ const itemVariants = {
 };
 
 export function LoginPage() {
-  const { wishlistEnabled } = useAuth();
+  const { wishlistEnabled, config, language } = useAuth();
 
   return (
     <div className="min-h-screen flex font-sans">
@@ -67,36 +71,47 @@ export function LoginPage() {
               variants={itemVariants}
               className="text-5xl xl:text-6xl font-serif font-bold mb-6 tracking-tight text-[#f4edda] leading-tight"
             >
-              Secret Santa
+              {config.gameTitle}
             </motion.h1>
 
             <motion.p
               variants={itemVariants}
               className="text-xl text-white/80 leading-relaxed mb-8"
             >
-              The most wonderful time of the year starts with a simple login.
-              Discover your match and spread the joy of giving.
+              {config.subtitle[language]}
             </motion.p>
 
             <motion.div variants={itemVariants} className="flex items-center gap-4 text-white/60 text-sm">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-[#f8b229] rounded-full animate-pulse" />
-                <span>Find your match</span>
-              </div>
+              {config.milestones.length > 0 ? (
+                <EventMilestones />
+              ) : (
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-[#f8b229] rounded-full animate-pulse" />
+                  <span>{translate(language, 'Find your match')}</span>
+                </div>
+              )}
               {wishlistEnabled && (
+                <>
+                  {config.milestones.length === 0 && <div className="w-px h-4 bg-white/20" />}
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-[#f8b229] rounded-full animate-pulse" />
+                    <span>{translate(language, 'Build your wishlist')}</span>
+                  </div>
+                </>
+              )}
+              {config.milestones.length === 0 && (
                 <>
                   <div className="w-px h-4 bg-white/20" />
                   <div className="flex items-center gap-2">
                     <div className="w-2 h-2 bg-[#f8b229] rounded-full animate-pulse" />
-                    <span>Build your wishlist</span>
+                    <span>{translate(language, 'Spread joy')}</span>
                   </div>
                 </>
               )}
-              <div className="w-px h-4 bg-white/20" />
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-[#f8b229] rounded-full animate-pulse" />
-                <span>Spread joy</span>
-              </div>
+
+            </motion.div>
+            <motion.div variants={itemVariants} className="mt-4 text-[#f4edda]">
+              <SpendingLimit className="text-[#f4edda]" />
             </motion.div>
           </motion.div>
         </div>
@@ -124,6 +139,10 @@ export function LoginPage() {
           transition={{ duration: 0.6, delay: 0.3, ease: 'easeOut' as const }}
           className="w-full max-w-md relative z-10"
         >
+          <div className="mb-6 text-center lg:hidden">
+            <h1 className="font-serif text-3xl font-bold text-[#1a472a]">{config.gameTitle}</h1>
+            <p className="mt-2 text-sm leading-relaxed text-gray-600">{config.subtitle[language]}</p>
+          </div>
           <Card className="border-0 shadow-2xl backdrop-blur-md bg-white/95 overflow-hidden">
             {/* Card top accent */}
             <div className="h-1.5 bg-gradient-to-r from-[#1a472a] via-[#8b1538] to-[#1a472a]" />
@@ -135,7 +154,7 @@ export function LoginPage() {
                 transition={{ delay: 0.5 }}
               >
                 <CardTitle className="text-3xl font-serif text-center text-[#1a472a]">
-                  Welcome Back
+                  {translate(language, 'Join the Secret Santa')}
                 </CardTitle>
               </motion.div>
               <motion.div
@@ -144,12 +163,18 @@ export function LoginPage() {
                 transition={{ delay: 0.6 }}
               >
                 <CardDescription className="text-center text-gray-500">
-                  Sign in to reveal your Secret Santa match
+                  {translate(language, 'Create your account to receive your match by email.')}
                 </CardDescription>
               </motion.div>
             </CardHeader>
 
             <CardContent className="pt-4 pb-8">
+              <Button asChild className="mb-6 h-12 w-full bg-[#8b1538] text-base hover:bg-[#6d102c]">
+                <Link to="/inscription">{translate(language, 'Create my account')}</Link>
+              </Button>
+              <p className="mb-4 text-center text-sm text-gray-500">
+                {translate(language, 'Already registered? Sign in')}
+              </p>
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -157,14 +182,12 @@ export function LoginPage() {
               >
                 <LoginForm />
               </motion.div>
-              <p className="mt-6 text-center text-sm text-gray-500">
-                New here?{' '}
-                <Link to="/register" className="font-medium text-[#1a472a] hover:underline">
-                  Create an account
-                </Link>
-              </p>
             </CardContent>
           </Card>
+
+          <div className="mt-5 flex justify-center lg:hidden">
+            <SpendingLimit className="text-[#8b1538]" />
+          </div>
 
           {/* Trust indicators */}
           <motion.p
@@ -173,7 +196,7 @@ export function LoginPage() {
             transition={{ delay: 1 }}
             className="text-center text-xs text-gray-400 mt-6"
           >
-            Your data is secure and only visible to your gift giver
+            {translate(language, 'Your information stays private.')}
           </motion.p>
         </motion.div>
       </div>

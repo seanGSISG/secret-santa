@@ -3,6 +3,7 @@ import { db, User } from '../db/database.js';
 import { requireAuth, requireAdmin } from '../middleware/auth.js';
 import { generatePassword, hashPassword } from '../utils/password.js';
 import { sendMatchEmail, sendWelcomeEmail } from '../services/email.js';
+import { createDrawAssignments } from '../utils/matching.js';
 
 const router = Router();
 
@@ -14,6 +15,34 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 // All admin routes require authentication and admin privileges
 router.use(requireAuth);
 router.use(requireAdmin);
+
+router.put('/draw-participation', async (req, res) => {
+  const { participatesInDraw } = req.body ?? {};
+  if (typeof participatesInDraw !== 'boolean') {
+    res.status(400).json({ error: 'Draw participation must be a boolean' });
+    return;
+  }
+
+  try {
+    const user = req.user!;
+    const nextValue = participatesInDraw ? 1 : 0;
+    if (user.participates_in_draw !== nextValue) {
+      const currentYear = new Date().getFullYear();
+      const updateParticipation = db.transaction(() => {
+        db.prepare('UPDATE users SET participates_in_draw = ? WHERE id = ?')
+          .run(nextValue, user.id);
+        db.prepare('DELETE FROM matches WHERE year = ?').run(currentYear);
+        db.prepare('UPDATE users SET has_seen_reveal = 0').run();
+      });
+      updateParticipation();
+    }
+
+    res.json({ participatesInDraw });
+  } catch (error) {
+    console.error('Update draw participation error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
 
 /**
  * GET /api/admin/users
@@ -52,6 +81,9 @@ router.get('/users', async (req, res) => {
         name: user.name,
         isAdmin: !!user.is_admin,
         hasSeenReveal: !!user.has_seen_reveal,
+        language: user.language,
+        secondhandPreference: !!user.secondhand_preference,
+        participatesInDraw: !!user.participates_in_draw,
         createdAt: user.created_at,
       })),
     });
@@ -129,6 +161,9 @@ router.post('/users', async (req, res) => {
         name: user.name,
         isAdmin: !!user.is_admin,
         hasSeenReveal: !!user.has_seen_reveal,
+        language: user.language,
+        secondhandPreference: !!user.secondhand_preference,
+        participatesInDraw: !!user.participates_in_draw,
         createdAt: user.created_at,
       },
       password, // Return plaintext password only on creation
@@ -138,7 +173,7 @@ router.post('/users', async (req, res) => {
     (async () => {
       try {
         console.log(`Sending welcome email to ${user.email}...`);
-        await sendWelcomeEmail(user.email, user.name, password);
+        await sendWelcomeEmail(user.email, user.name, password, user.language);
       } catch (emailError) {
         console.error('Error sending welcome email:', emailError);
       }
@@ -285,6 +320,9 @@ router.put('/users/:id', async (req, res) => {
         name: updatedUser.name,
         isAdmin: !!updatedUser.is_admin,
         hasSeenReveal: !!updatedUser.has_seen_reveal,
+        language: updatedUser.language,
+        secondhandPreference: !!updatedUser.secondhand_preference,
+        participatesInDraw: !!updatedUser.participates_in_draw,
         createdAt: updatedUser.created_at,
       },
     });
@@ -345,8 +383,10 @@ interface MatchWithNames {
   year: number;
   giver_name: string;
   giver_email: string;
+  giver_language: 'fr' | 'en';
   receiver_name: string;
   receiver_email: string;
+  receiver_secondhand_preference: number;
 }
 
 /**
@@ -367,8 +407,10 @@ router.get('/matches', async (req, res) => {
           m.year,
           g.name as giver_name,
           g.email as giver_email,
+          g.language as giver_language,
           r.name as receiver_name,
-          r.email as receiver_email
+          r.email as receiver_email,
+          r.secondhand_preference as receiver_secondhand_preference
         FROM matches m
         JOIN users g ON m.giver_id = g.id
         JOIN users r ON m.receiver_id = r.id
@@ -409,25 +451,16 @@ router.post('/matches/generate', async (req, res) => {
     const currentYear = new Date().getFullYear();
 
     // Get all users
-    const users = db.prepare<[], User>('SELECT * FROM users ORDER BY RANDOM()').all();
+    const users = db
+      .prepare<[], User>('SELECT * FROM users WHERE participates_in_draw = 1 ORDER BY RANDOM()')
+      .all();
 
     if (users.length < 2) {
       res.status(400).json({ error: 'Need at least 2 users to generate matches' });
       return;
     }
 
-    // Generate circular matches (each person gives to the next, last gives to first)
-    const matches: Array<{ giver_id: number; receiver_id: number }> = [];
-
-    for (let i = 0; i < users.length; i++) {
-      const giver = users[i];
-      const receiver = users[(i + 1) % users.length]; // Circular: last person gives to first
-
-      matches.push({
-        giver_id: giver.id,
-        receiver_id: receiver.id,
-      });
-    }
+    const matches = createDrawAssignments(users);
 
     // Use transaction to ensure atomicity of match generation
     const generateMatches = db.transaction((year: number, matchList: Array<{ giver_id: number; receiver_id: number }>) => {
@@ -459,8 +492,10 @@ router.post('/matches/generate', async (req, res) => {
           m.year,
           g.name as giver_name,
           g.email as giver_email,
+          g.language as giver_language,
           r.name as receiver_name,
-          r.email as receiver_email
+          r.email as receiver_email,
+          r.secondhand_preference as receiver_secondhand_preference
         FROM matches m
         JOIN users g ON m.giver_id = g.id
         JOIN users r ON m.receiver_id = r.id
@@ -497,7 +532,9 @@ router.post('/matches/generate', async (req, res) => {
             await sendMatchEmail(
               { name: match.giver_name, email: match.giver_email },
               match.receiver_name,
-              match.receiver_email
+              match.receiver_email,
+              match.giver_language,
+              !!match.receiver_secondhand_preference,
             );
           } else {
             console.warn(`Skipping match email for user ${match.giver_id} (no email)`);
@@ -525,6 +562,37 @@ router.put('/matches', async (req, res) => {
 
     if (!Array.isArray(matches) || matches.length === 0) {
       res.status(400).json({ error: 'Invalid matches data' });
+      return;
+    }
+
+    const participants = db
+      .prepare<[], { id: number }>('SELECT id FROM users WHERE participates_in_draw = 1')
+      .all();
+    const participantIds = new Set(participants.map((participant) => participant.id));
+    const giverIds = new Set<number>();
+    const receiverIds = new Set<number>();
+    let validParticipantAssignments = matches.length === participants.length;
+    for (const match of matches) {
+      if (
+        !participantIds.has(match.giver_id) ||
+        !participantIds.has(match.receiver_id) ||
+        match.giver_id === match.receiver_id ||
+        giverIds.has(match.giver_id) ||
+        receiverIds.has(match.receiver_id)
+      ) {
+        validParticipantAssignments = false;
+        break;
+      }
+      giverIds.add(match.giver_id);
+      receiverIds.add(match.receiver_id);
+    }
+
+    if (
+      !validParticipantAssignments ||
+      giverIds.size !== participants.length ||
+      receiverIds.size !== participants.length
+    ) {
+      res.status(400).json({ error: 'Matches must include all and only participating users' });
       return;
     }
 

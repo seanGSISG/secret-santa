@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { api } from '@/lib/api';
+import { api, ApiError } from '@/lib/api';
 import type { MatchResponse } from '@/types';
 
 interface UseMatchReturn {
@@ -21,7 +21,10 @@ export function useMatch(): UseMatchReturn {
       const data = await api.get<MatchResponse>('/match');
       setMatch(data);
     } catch (err) {
-      if (err instanceof Error) {
+      if (err instanceof ApiError && err.status === 404) {
+        setError(null);
+        setMatch(null);
+      } else if (err instanceof Error) {
         setError(err.message);
       } else {
         setError('Failed to load match');

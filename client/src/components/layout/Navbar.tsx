@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { TreePine, LogOut, Settings, Menu, X, Sparkles } from 'lucide-react';
+import { TreePine, LogOut, Settings, Menu, X, Sparkles, Languages, Trash2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -15,18 +15,31 @@ import {
 import { characters } from '@/assets/characters';
 
 import { getFestiveCharacter } from '@/lib/festive';
+import { translate } from '@/lib/i18n';
+import { toast } from 'sonner';
+import { DeleteAccountDialog } from '@/components/auth/DeleteAccountDialog';
 
 export function Navbar() {
-  const { user, logout, wishlistEnabled } = useAuth();
+  const { user, logout, wishlistEnabled, language, setLanguage, config } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [deleteAccountDialogOpen, setDeleteAccountDialogOpen] = useState(false);
 
   if (!user) return null;
 
   const handleLogout = async () => {
     await logout();
-    navigate('/login');
+    navigate('/connexion');
+  };
+
+  const handleLanguageChange = async (newLanguage: 'fr' | 'en') => {
+    try {
+      await setLanguage(newLanguage);
+    } catch (error) {
+      console.error('Failed to update language:', error);
+      toast.error(translate(language, 'Unable to update your language. Please try again.'));
+    }
   };
 
   const handleMobileMenuClose = () => {
@@ -59,7 +72,7 @@ export function Navbar() {
               <TreePine className="h-5 w-5 text-[#f8b229]" />
             </div>
             <div className="flex items-center gap-2">
-              <span className="font-serif tracking-tight">Secret Santa</span>
+              <span className="font-serif tracking-tight">{config.gameTitle}</span>
               <img src={characters.santa} alt="Santa" className="w-7 h-7 object-contain" />
             </div>
           </Link>
@@ -72,7 +85,7 @@ export function Navbar() {
                 alt="Rudolph"
                 className="w-8 h-8 object-contain transition-transform group-hover:scale-110"
               />
-              <span>My Match</span>
+              <span>{translate(language, 'My Match')}</span>
             </Link>
             {wishlistEnabled && (
               <>
@@ -82,7 +95,7 @@ export function Navbar() {
                     alt="Clarice"
                     className="w-8 h-8 object-contain transition-transform group-hover:scale-110"
                   />
-                  <span>My Wishlist</span>
+                  <span>{translate(language, 'My Wishlist')}</span>
                 </Link>
                 <Link to="/recipient" className={navLinkClass('/recipient')}>
                   <img
@@ -90,7 +103,7 @@ export function Navbar() {
                     alt="Hermey"
                     className="w-8 h-8 object-contain transition-transform group-hover:scale-110"
                   />
-                  <span>Gift Ideas</span>
+                  <span>{translate(language, 'Gift Ideas')}</span>
                 </Link>
               </>
             )}
@@ -104,7 +117,7 @@ export function Navbar() {
               size="icon"
               className="md:hidden text-white hover:text-white hover:bg-white/10 rounded-xl"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              aria-label="Toggle menu"
+              aria-label={translate(language, 'Toggle menu')}
             >
               {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </Button>
@@ -115,7 +128,7 @@ export function Navbar() {
                 <Button
                   variant="ghost"
                   className="relative h-10 w-10 rounded-full transition-all hover:scale-105 hover:ring-2 hover:ring-[#f8b229]/50 focus-visible:ring-2 focus-visible:ring-[#f8b229] focus-visible:ring-offset-2 focus-visible:ring-offset-[#1a472a]"
-                  aria-label="User menu"
+                  aria-label={translate(language, 'User menu')}
                 >
                   <Avatar className="ring-2 ring-white/20">
                     <AvatarFallback className="bg-gradient-to-br from-[#2d5a3d] to-[#1a472a] text-white font-medium p-1">
@@ -144,18 +157,37 @@ export function Navbar() {
                     <DropdownMenuItem asChild>
                       <Link to="/admin" className="flex items-center cursor-pointer">
                         <Settings className="mr-2 h-4 w-4" />
-                        <span>Admin Panel</span>
+                        <span>{translate(language, 'Admin Panel')}</span>
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                   </>
                 )}
+                <DropdownMenuItem onClick={() => void handleLanguageChange('fr')} className="cursor-pointer">
+                  <Languages className="mr-2 h-4 w-4" />
+                  <span>{language === 'fr' ? '✓ ' : ''}Français</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => void handleLanguageChange('en')} className="cursor-pointer">
+                  <Languages className="mr-2 h-4 w-4" />
+                  <span>{language === 'en' ? '✓ ' : ''}English</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={handleLogout}
                   className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50"
                 >
                   <LogOut className="mr-2 h-4 w-4" />
-                  <span>Sign Out</span>
+                  <span>{translate(language, 'Sign Out')}</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onSelect={() => {
+                    setDeleteAccountDialogOpen(true);
+                  }}
+                  className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  <span>{translate(language, 'Delete my account')}</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -176,7 +208,7 @@ export function Navbar() {
                 }`}
               >
                 <img src={characters.rudolph} alt="Rudolph" className="w-7 h-7 object-contain" />
-                <span className="font-medium">My Match</span>
+                <span className="font-medium">{translate(language, 'My Match')}</span>
               </Link>
               {wishlistEnabled && <Link
                 to="/wishlist"
@@ -188,7 +220,7 @@ export function Navbar() {
                 }`}
               >
                 <img src={characters.clarice} alt="Clarice" className="w-7 h-7 object-contain" />
-                <span className="font-medium">My Wishlist</span>
+                <span className="font-medium">{translate(language, 'My Wishlist')}</span>
               </Link>}
               {wishlistEnabled && <Link
                 to="/recipient"
@@ -200,7 +232,7 @@ export function Navbar() {
                 }`}
               >
                 <img src={characters.hermey} alt="Hermey" className="w-7 h-7 object-contain" />
-                <span className="font-medium">Gift Ideas</span>
+                <span className="font-medium">{translate(language, 'Gift Ideas')}</span>
               </Link>}
               {user.isAdmin && (
                 <>
@@ -215,7 +247,7 @@ export function Navbar() {
                     }`}
                   >
                     <Settings className="w-5 h-5" />
-                    <span className="font-medium">Admin Panel</span>
+                    <span className="font-medium">{translate(language, 'Admin Panel')}</span>
                   </Link>
                 </>
               )}
@@ -223,6 +255,10 @@ export function Navbar() {
           </div>
         )}
       </div>
+      <DeleteAccountDialog
+        open={deleteAccountDialogOpen}
+        onOpenChange={setDeleteAccountDialogOpen}
+      />
     </nav>
   );
 }

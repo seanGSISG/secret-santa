@@ -20,7 +20,7 @@ export function GiftPlaceholder({ className, variant = 'default' }: GiftPlacehol
                 <div className="relative w-full h-full flex items-center justify-center p-4">
                     <img
                         src={character}
-                        alt="Festive Character"
+                        alt=""
                         className="max-w-full max-h-full object-contain opacity-80 hover:scale-110 transition-transform duration-300"
                     />
                 </div>

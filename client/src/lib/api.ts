@@ -1,14 +1,19 @@
 const API_BASE = '/api';
+import { translate } from '@/lib/i18n';
+import { DEFAULT_LANGUAGE } from '@/lib/appConfig';
+import type { Language } from '@/types';
 
 // Debounce flag to prevent multiple session expiration events
 let sessionExpiredDispatched = false;
 
 class ApiError extends Error {
   status: number;
+  accountDeleted: boolean;
 
-  constructor(status: number, message: string) {
+  constructor(status: number, message: string, accountDeleted = false) {
     super(message);
     this.status = status;
+    this.accountDeleted = accountDeleted;
   }
 }
 
@@ -18,6 +23,7 @@ async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
     credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
+      'Accept-Language': localStorage.getItem('language') || DEFAULT_LANGUAGE,
       ...options?.headers,
     },
   });
@@ -37,7 +43,15 @@ async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
 
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
-    throw new ApiError(res.status, data.error || 'Request failed');
+    const storedLanguage = localStorage.getItem('language');
+    const language: Language = storedLanguage === 'en' || storedLanguage === 'fr'
+      ? storedLanguage
+      : DEFAULT_LANGUAGE;
+    throw new ApiError(
+      res.status,
+      translate(language, data.error || 'Request failed'),
+      data.accountDeleted === true,
+    );
   }
 
   return res.json();
