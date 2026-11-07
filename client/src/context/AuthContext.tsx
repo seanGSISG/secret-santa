@@ -6,8 +6,13 @@ import type { User, LoginCredentials, AuthResponse } from '@/types';
 interface AuthContextType {
   user: User | null;
   loading: boolean;
+  wishlistEnabled: boolean;
   login: (credentials: LoginCredentials) => Promise<void>;
   logout: () => Promise<void>;
+}
+
+interface AppConfigResponse {
+  wishlistEnabled: boolean;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -19,21 +24,34 @@ interface AuthProviderProps {
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [wishlistEnabled, setWishlistEnabled] = useState(true);
 
   useEffect(() => {
     const checkAuth = async () => {
-      try {
-        const response = await api.get<AuthResponse>('/auth/me');
-        setUser(response.user);
-      } catch (error) {
+      const [configResult, authResult] = await Promise.allSettled([
+        api.get<AppConfigResponse>('/config'),
+        api.get<AuthResponse>('/auth/me'),
+      ]);
+
+      if (configResult.status === 'fulfilled') {
+        setWishlistEnabled(configResult.value.wishlistEnabled);
+      } else {
+        console.error('Failed to load app configuration:', configResult.reason);
+        setWishlistEnabled(false);
+      }
+
+      if (authResult.status === 'fulfilled') {
+        setUser(authResult.value.user);
+      } else {
+        const error = authResult.reason;
         if (error instanceof ApiError && error.status === 401) {
           setUser(null);
         } else {
           console.error('Failed to check auth:', error);
         }
-      } finally {
-        setLoading(false);
       }
+
+      setLoading(false);
     };
 
     checkAuth();
@@ -80,7 +98,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, wishlistEnabled, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

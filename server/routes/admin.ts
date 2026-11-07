@@ -496,7 +496,8 @@ router.post('/matches/generate', async (req, res) => {
             console.log(`Sending match email to ${match.giver_email} (match: ${match.receiver_name})`);
             await sendMatchEmail(
               { name: match.giver_name, email: match.giver_email },
-              match.receiver_name
+              match.receiver_name,
+              match.receiver_email
             );
           } else {
             console.warn(`Skipping match email for user ${match.giver_id} (no email)`);

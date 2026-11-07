@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { getFestiveCharacter } from '@/lib/festive';
+import { useAuth } from '@/hooks/useAuth';
 
 interface MatchCardProps {
   recipient: {
@@ -41,6 +42,7 @@ const itemVariants = {
 };
 
 export function MatchCard({ recipient, animated = false }: MatchCardProps) {
+  const { wishlistEnabled } = useAuth();
   const Wrapper = animated ? motion.div : 'div';
   const Item = animated ? motion.div : 'div';
 
@@ -107,25 +109,27 @@ export function MatchCard({ recipient, animated = false }: MatchCardProps) {
             </h2>
           </Item>
           <Item {...itemProps}>
-            <p className="text-white/50 text-sm">
-              {recipient.email}
+            <p className="text-white/70 text-sm">
+              Email: {recipient.email}
             </p>
           </Item>
         </CardContent>
 
-        <CardFooter className="pt-4 pb-8 px-6">
-          <Item {...itemProps} className="w-full">
-            <Button
-              asChild
-              className="w-full h-12 bg-gradient-to-r from-[#8b1538] to-[#c41e3a] hover:from-[#a01840] hover:to-[#d42a46] text-white font-semibold text-base shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
-            >
-              <Link to="/recipient" aria-label="View recipient's wishlist" className="flex items-center justify-center gap-2">
-                <Gift className="w-5 h-5" />
-                View Their Wishlist
-              </Link>
-            </Button>
-          </Item>
-        </CardFooter>
+        {wishlistEnabled && (
+          <CardFooter className="pt-4 pb-8 px-6">
+            <Item {...itemProps} className="w-full">
+              <Button
+                asChild
+                className="w-full h-12 bg-gradient-to-r from-[#8b1538] to-[#c41e3a] hover:from-[#a01840] hover:to-[#d42a46] text-white font-semibold text-base shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
+              >
+                <Link to="/recipient" aria-label="View recipient's wishlist" className="flex items-center justify-center gap-2">
+                  <Gift className="w-5 h-5" />
+                  View Their Wishlist
+                </Link>
+              </Button>
+            </Item>
+          </CardFooter>
+        )}
 
         {/* Bottom decorative gradient line */}
         <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[#f8b229]/50 to-transparent" />

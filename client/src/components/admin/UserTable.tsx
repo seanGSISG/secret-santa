@@ -24,6 +24,7 @@ interface UserTableProps {
   onDelete: (id: number) => Promise<void>;
   onResetPassword: (id: number) => Promise<string>;
   currentUserId?: number;
+  wishlistEnabled: boolean;
 }
 
 export function UserTable({
@@ -32,6 +33,7 @@ export function UserTable({
   onDelete,
   onResetPassword,
   currentUserId,
+  wishlistEnabled,
 }: UserTableProps) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<AdminUser | null>(null);
@@ -176,7 +178,7 @@ export function UserTable({
             <AlertTitle>Warning</AlertTitle>
             <AlertDescription>
               <ul className="list-disc list-inside space-y-1 mt-2">
-                <li>All wishlist items</li>
+                {wishlistEnabled && <li>All wishlist items</li>}
                 <li>All match assignments involving this user</li>
                 <li>All active sessions</li>
               </ul>

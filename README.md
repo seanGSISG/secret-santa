@@ -168,9 +168,26 @@ Email notifications let participants know when matches are assigned and when wis
    # Your Gmail credentials (from Step 3)
    EMAIL_USER=your-gmail@gmail.com
    EMAIL_PASS=abcdefghijklmnop
+
+   # Optional: customize the sender address without changing SMTP login credentials
+   EMAIL_FROM=santa@example.com
+
+   # Optional: disable wishlist pages and related emails
+   ENABLE_WISHLIST=false
+
+   # Optional: domains allowed to self-register (comma-separated)
+   ALLOWED_EMAIL_DOMAINS=example.com,molinier.io
    ```
 
    > **Note:** Remove any spaces from the App Password
+   >
+   > Public registration is disabled when `ALLOWED_EMAIL_DOMAINS` is empty. Only
+   > exact domains in this comma-separated list may register. A new password is
+   > emailed for both new registrations and existing accounts requesting a reset.
+   >
+   > Set `ENABLE_WISHLIST=false` to hide wishlist features and remove wishlist
+   > references from notification emails. `EMAIL_FROM` changes the visible sender;
+   > SMTP login continues to use `EMAIL_USER` and `EMAIL_PASS`.
 
 ---
 

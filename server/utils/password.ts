@@ -1,37 +1,13 @@
+import { randomInt } from 'node:crypto';
+
 const SALT_ROUNDS = 12;
-
-const ADJECTIVES = [
-  'Happy', 'Sunny', 'Clever', 'Brave', 'Calm', 'Eager', 'Fancy', 'Jolly', 'Kind', 'Lively',
-  'Merry', 'Nice', 'Proud', 'Silly', 'Witty', 'Lucky', 'Shiny', 'Cozy', 'Fuzzy', 'Bumpy',
-  'Giant', 'Tiny', 'Swift', 'Slow', 'Loud', 'Quiet', 'Soft', 'Hard', 'Cool', 'Warm'
-];
-
-const NOUNS = [
-  'Panda', 'Tiger', 'Eagle', 'Dolphin', 'Bear', 'Wolf', 'Fox', 'Lion', 'Hawk', 'Owl',
-  'Shark', 'Whale', 'Seal', 'Otter', 'Penguin', 'Koala', 'Zebra', 'Camel', 'Llama', 'Moose',
-  'Pizza', 'Taco', 'Burger', 'Mango', 'Lemon', 'Apple', 'Grape', 'Berry', 'Kiwi', 'Melon',
-  'Rocket', 'Robot', 'Comet', 'Star', 'Moon', 'Sun', 'Cloud', 'Rain', 'Snow', 'Wind'
-];
 
 /**
  * Generate a memorable passphrase
- * Format: Word + Digit + # + Word + # + Word
- * Example: Oink9#Craving#Cost
+ * Format: Word + Digit + five # separated words
+ * Example: Oink9#Craving#Cost#Anchor#Lemon#Panda
  */
 export function generatePassword(): string {
-  const getRandom = (arr: string[]) => arr[Math.floor(Math.random() * arr.length)];
-
-  const word1 = getRandom([...ADJECTIVES, ...NOUNS]); // Mix them for variety or keep separate? User example "Oink", "Lettuce" are nouns. "Craving" is... gerund. "Cost" is noun.
-  // User examples: Oink (noun/sound), Craving (noun), Cost (noun). Lettuce (noun), Anchor (noun), Paralyses (verb/noun).
-  // Let's just use a mixed list of friendly words.
-
-  const w1 = getRandom(NOUNS);
-  const w2 = getRandom(ADJECTIVES);
-  const w3 = getRandom(NOUNS);
-
-  // Example pattern: Noun + Digit + # + Adjective + # + Noun
-  // But strictly following user example "Oink9#Craving#Cost" -> Noun + Num + # + Noun + # + Noun
-
   const words = [
     'Apple', 'Anchor', 'Bear', 'Bird', 'Bridge', 'Cactus', 'Castle', 'Cloud', 'Comet', 'Cost',
     'Craving', 'Crown', 'Dolphin', 'Eagle', 'Echo', 'Falcon', 'Feast', 'Fire', 'Flower', 'Forest',
@@ -48,14 +24,12 @@ export function generatePassword(): string {
     'Wolf', 'Wood', 'Wool', 'World', 'Worm', 'Wren', 'Yard', 'Zebra', 'Zen'
   ];
 
-  const getWord = () => words[Math.floor(Math.random() * words.length)];
-
+  const getWord = () => words[randomInt(words.length)];
   const part1 = getWord();
-  const digit = Math.floor(Math.random() * 9) + 1; // 1-9
-  const part2 = getWord();
-  const part3 = getWord();
+  const digit = randomInt(1, 10);
+  const remainingParts = Array.from({ length: 5 }, getWord);
 
-  return `${part1}${digit}#${part2}#${part3}`;
+  return `${part1}${digit}#${remainingParts.join('#')}`;
 }
 
 /**

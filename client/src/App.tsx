@@ -8,6 +8,7 @@ import { MatchPage } from '@/pages/MatchPage';
 import { MyWishlistPage } from '@/pages/MyWishlistPage';
 import { RecipientWishlistPage } from '@/pages/RecipientWishlistPage';
 import { AdminPage } from '@/pages/AdminPage';
+import { RegistrationPage } from '@/pages/RegistrationPage';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -52,6 +53,8 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 }
 
 function AppRoutes() {
+  const { wishlistEnabled } = useAuth();
+
   return (
     <Routes>
       <Route
@@ -63,6 +66,14 @@ function AppRoutes() {
         }
       />
       <Route
+        path="/register"
+        element={
+          <PublicRoute>
+            <RegistrationPage />
+          </PublicRoute>
+        }
+      />
+      <Route
         path="/match"
         element={
           <ProtectedRoute>
@@ -70,22 +81,31 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
-      <Route
-        path="/wishlist"
-        element={
-          <ProtectedRoute>
-            <MyWishlistPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/recipient"
-        element={
-          <ProtectedRoute>
-            <RecipientWishlistPage />
-          </ProtectedRoute>
-        }
-      />
+      {wishlistEnabled ? (
+        <>
+          <Route
+            path="/wishlist"
+            element={
+              <ProtectedRoute>
+                <MyWishlistPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/recipient"
+            element={
+              <ProtectedRoute>
+                <RecipientWishlistPage />
+              </ProtectedRoute>
+            }
+          />
+        </>
+      ) : (
+        <>
+          <Route path="/wishlist" element={<Navigate to="/match" replace />} />
+          <Route path="/recipient" element={<Navigate to="/match" replace />} />
+        </>
+      )}
       <Route
         path="/admin"
         element={

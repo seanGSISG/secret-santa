@@ -1,8 +1,9 @@
 import { Router } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { db, User, Session } from '../db/database.js';
-import { verifyPassword } from '../utils/password.js';
+import { generatePassword, hashPassword, verifyPassword } from '../utils/password.js';
 import { requireAuth } from '../middleware/auth.js';
+import { sendRegistrationPasswordEmail } from '../services/email.js';
 
 const router = Router();
 
@@ -12,6 +13,101 @@ const SESSION_DURATION_DAYS = 7;
  * Email validation regex - RFC 5322 compliant basic pattern
  */
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/**
+ * POST /api/auth/register
+ * Create an account or reset an existing account's password by email
+ */
+router.post('/register', async (req, res) => {
+  const allowedDomains = (process.env.ALLOWED_EMAIL_DOMAINS || '')
+    .split(',')
+    .map((domain) => domain.trim().toLowerCase().replace(/^@/, ''))
+    .filter(Boolean);
+
+  if (allowedDomains.length === 0) {
+    res.status(503).json({ error: 'Registration is not configured' });
+    return;
+  }
+
+  const { email, name } = req.body ?? {};
+  if (typeof email !== 'string' || typeof name !== 'string') {
+    res.status(400).json({ error: 'Email and name are required' });
+    return;
+  }
+
+  const sanitizedEmail = email.trim().toLowerCase();
+  const sanitizedName = name.trim();
+
+  if (sanitizedEmail.length > 254 || !EMAIL_REGEX.test(sanitizedEmail)) {
+    res.status(400).json({ error: 'Invalid email format' });
+    return;
+  }
+
+  if (!sanitizedName || sanitizedName.length > 100) {
+    res.status(400).json({ error: 'Name must be between 1 and 100 characters' });
+    return;
+  }
+
+  const emailDomain = sanitizedEmail.slice(sanitizedEmail.lastIndexOf('@') + 1);
+  if (!allowedDomains.includes(emailDomain)) {
+    res.status(403).json({ error: 'Registrations from this email domain are not allowed' });
+    return;
+  }
+
+  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+    res.status(503).json({ error: 'Email is not configured; registration is unavailable' });
+    return;
+  }
+
+  try {
+    const existingUser = db
+      .prepare<[string], User>('SELECT * FROM users WHERE email = ?')
+      .get(sanitizedEmail);
+    const password = generatePassword();
+    const passwordHash = await hashPassword(password);
+    let userId: number;
+
+    if (existingUser) {
+      userId = existingUser.id;
+      db.prepare('UPDATE users SET password_hash = ? WHERE id = ?')
+        .run(passwordHash, userId);
+    } else {
+      const result = db
+        .prepare('INSERT INTO users (email, password_hash, name) VALUES (?, ?, ?)')
+        .run(sanitizedEmail, passwordHash, sanitizedName);
+      userId = Number(result.lastInsertRowid);
+    }
+
+    try {
+      await sendRegistrationPasswordEmail(sanitizedEmail, existingUser?.name ?? sanitizedName, password);
+    } catch (emailError) {
+      console.error('Registration email error:', emailError);
+
+      try {
+        if (existingUser) {
+          db.prepare('UPDATE users SET password_hash = ? WHERE id = ? AND password_hash = ?')
+            .run(existingUser.password_hash, userId, passwordHash);
+        } else {
+          db.prepare('DELETE FROM users WHERE id = ?').run(userId);
+        }
+      } catch (rollbackError) {
+        console.error('Failed to restore account after registration email error:', rollbackError);
+      }
+
+      res.status(502).json({ error: 'Could not send the welcome email. Please try again later.' });
+      return;
+    }
+
+    if (existingUser) {
+      db.prepare('DELETE FROM sessions WHERE user_id = ?').run(userId);
+    }
+
+    res.json({ message: 'Check your email for your Secret Santa password.' });
+  } catch (error) {
+    console.error('Registration error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
 
 /**
  * POST /api/auth/login

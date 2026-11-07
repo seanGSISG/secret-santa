@@ -23,6 +23,7 @@ import adminRoutes from './routes/admin.js';
 
 // Import middleware for session cleanup
 import { cleanupExpiredSessions } from './middleware/auth.js';
+import { isWishlistEnabled } from './utils/features.js';
 
 
 const app = express();
@@ -57,6 +58,10 @@ app.use('/api/auth', authRoutes);
 app.use('/api/match', matchRoutes);
 app.use('/api/wishlist', wishlistRoutes);
 app.use('/api/admin', adminRoutes);
+
+app.get('/api/config', (_req, res) => {
+  res.json({ wishlistEnabled: isWishlistEnabled() });
+});
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

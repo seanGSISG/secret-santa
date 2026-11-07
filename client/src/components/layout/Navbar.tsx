@@ -17,7 +17,7 @@ import { characters } from '@/assets/characters';
 import { getFestiveCharacter } from '@/lib/festive';
 
 export function Navbar() {
-  const { user, logout } = useAuth();
+  const { user, logout, wishlistEnabled } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -74,22 +74,26 @@ export function Navbar() {
               />
               <span>My Match</span>
             </Link>
-            <Link to="/wishlist" className={navLinkClass('/wishlist')}>
-              <img
-                src={characters.clarice}
-                alt="Clarice"
-                className="w-8 h-8 object-contain transition-transform group-hover:scale-110"
-              />
-              <span>My Wishlist</span>
-            </Link>
-            <Link to="/recipient" className={navLinkClass('/recipient')}>
-              <img
-                src={characters.hermey}
-                alt="Hermey"
-                className="w-8 h-8 object-contain transition-transform group-hover:scale-110"
-              />
-              <span>Gift Ideas</span>
-            </Link>
+            {wishlistEnabled && (
+              <>
+                <Link to="/wishlist" className={navLinkClass('/wishlist')}>
+                  <img
+                    src={characters.clarice}
+                    alt="Clarice"
+                    className="w-8 h-8 object-contain transition-transform group-hover:scale-110"
+                  />
+                  <span>My Wishlist</span>
+                </Link>
+                <Link to="/recipient" className={navLinkClass('/recipient')}>
+                  <img
+                    src={characters.hermey}
+                    alt="Hermey"
+                    className="w-8 h-8 object-contain transition-transform group-hover:scale-110"
+                  />
+                  <span>Gift Ideas</span>
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Mobile & Desktop Right Section */}
@@ -174,7 +178,7 @@ export function Navbar() {
                 <img src={characters.rudolph} alt="Rudolph" className="w-7 h-7 object-contain" />
                 <span className="font-medium">My Match</span>
               </Link>
-              <Link
+              {wishlistEnabled && <Link
                 to="/wishlist"
                 onClick={handleMobileMenuClose}
                 className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-colors ${
@@ -185,8 +189,8 @@ export function Navbar() {
               >
                 <img src={characters.clarice} alt="Clarice" className="w-7 h-7 object-contain" />
                 <span className="font-medium">My Wishlist</span>
-              </Link>
-              <Link
+              </Link>}
+              {wishlistEnabled && <Link
                 to="/recipient"
                 onClick={handleMobileMenuClose}
                 className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-colors ${
@@ -197,7 +201,7 @@ export function Navbar() {
               >
                 <img src={characters.hermey} alt="Hermey" className="w-7 h-7 object-contain" />
                 <span className="font-medium">Gift Ideas</span>
-              </Link>
+              </Link>}
               {user.isAdmin && (
                 <>
                   <div className="border-t border-white/10 my-3"></div>

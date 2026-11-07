@@ -3,6 +3,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { motion } from 'framer-motion';
 import { Gift, Sparkles, TreePine } from 'lucide-react';
 import { FestiveParade } from '@/components/layout/FestiveParade';
+import { Link } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
 
 // Animation variants for staggered reveal
 const containerVariants = {
@@ -26,6 +28,8 @@ const itemVariants = {
 };
 
 export function LoginPage() {
+  const { wishlistEnabled } = useAuth();
+
   return (
     <div className="min-h-screen flex font-sans">
       {/* Left panel - Festive gradient with enhanced visuals */}
@@ -74,19 +78,20 @@ export function LoginPage() {
               Discover your match and spread the joy of giving.
             </motion.p>
 
-            <motion.div
-              variants={itemVariants}
-              className="flex items-center gap-4 text-white/60 text-sm"
-            >
+            <motion.div variants={itemVariants} className="flex items-center gap-4 text-white/60 text-sm">
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 bg-[#f8b229] rounded-full animate-pulse" />
                 <span>Find your match</span>
               </div>
-              <div className="w-px h-4 bg-white/20" />
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-[#f8b229] rounded-full animate-pulse" />
-                <span>Build your wishlist</span>
-              </div>
+              {wishlistEnabled && (
+                <>
+                  <div className="w-px h-4 bg-white/20" />
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-[#f8b229] rounded-full animate-pulse" />
+                    <span>Build your wishlist</span>
+                  </div>
+                </>
+              )}
               <div className="w-px h-4 bg-white/20" />
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 bg-[#f8b229] rounded-full animate-pulse" />
@@ -152,6 +157,12 @@ export function LoginPage() {
               >
                 <LoginForm />
               </motion.div>
+              <p className="mt-6 text-center text-sm text-gray-500">
+                New here?{' '}
+                <Link to="/register" className="font-medium text-[#1a472a] hover:underline">
+                  Create an account
+                </Link>
+              </p>
             </CardContent>
           </Card>
 

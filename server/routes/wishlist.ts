@@ -3,8 +3,17 @@ import { db, WishlistItem, Match, User } from '../db/database.js';
 import { requireAuth } from '../middleware/auth.js';
 import { fetchProductInfo } from '../utils/amazon.js';
 import { sendWishlistUpdateEmail } from '../services/email.js';
+import { isWishlistEnabled } from '../utils/features.js';
 
 const router = Router();
+
+router.use((_req, res, next) => {
+  if (!isWishlistEnabled()) {
+    res.status(404).json({ error: 'Wishlist feature is disabled' });
+    return;
+  }
+  next();
+});
 
 /**
  * GET /api/wishlist

@@ -16,7 +16,7 @@ import { UserPlus, Users, Shuffle, TreePine } from 'lucide-react';
 import type { AdminUser, CreateUserRequest, UpdateUserRequest } from '@/types';
 
 export function AdminPage() {
-  const { user } = useAuth();
+  const { user, wishlistEnabled } = useAuth();
   const {
     users,
     loadingUsers,
@@ -157,6 +157,7 @@ export function AdminPage() {
                 onDelete={handleDeleteUser}
                 onResetPassword={handleResetPassword}
                 currentUserId={user.id}
+                wishlistEnabled={wishlistEnabled}
               />
             )}
           </CardContent>
