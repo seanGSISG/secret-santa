@@ -3,8 +3,17 @@ import { db, WishlistItem, Match, User } from '../db/database.js';
 import { requireAuth } from '../middleware/auth.js';
 import { fetchProductInfo } from '../utils/amazon.js';
 import { sendWishlistUpdateEmail } from '../services/email.js';
+import { isWishlistEnabled } from '../utils/features.js';
 
 const router = Router();
+
+router.use((_req, res, next) => {
+  if (!isWishlistEnabled()) {
+    res.status(404).json({ error: 'Wishlist feature is disabled' });
+    return;
+  }
+  next();
+});
 
 /**
  * GET /api/wishlist
@@ -120,7 +129,13 @@ router.post('/', requireAuth, async (req, res) => {
         if (santa && giftee && santa.email) {
           console.log(`Sending wishlist update email to ${santa.email}...`);
           // Don't await this to avoid blocking the response
-          sendWishlistUpdateEmail(santa.email, santa.name, giftee.name, productInfo.title || 'New Item')
+          sendWishlistUpdateEmail(
+            santa.email,
+            santa.name,
+            giftee.name,
+            productInfo.title || 'New Item',
+            santa.language,
+          )
             .then(() => console.log(`Wishlist email sent to ${santa.email}`))
             .catch(e => console.error('Failed to send wishlist email', e));
         } else {

@@ -17,6 +17,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { CheckCircle2 } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { translate } from '@/lib/i18n';
 
 interface UserFormProps {
   open: boolean;
@@ -26,6 +28,7 @@ interface UserFormProps {
 }
 
 export function UserForm({ open, onOpenChange, user, onSubmit }: UserFormProps) {
+  const { language } = useAuth();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [isAdmin, setIsAdmin] = useState(false);
@@ -69,9 +72,10 @@ export function UserForm({ open, onOpenChange, user, onSubmit }: UserFormProps) 
         const updateData: UpdateUserRequest = {};
         if (name !== user.name) updateData.name = name;
         if (email !== user.email) updateData.email = email;
+        if (isAdmin !== user.isAdmin) updateData.isAdmin = isAdmin;
 
         if (Object.keys(updateData).length === 0) {
-          setError('No changes detected');
+          setError(translate(language, 'No changes detected'));
           setSubmitting(false);
           return;
         }
@@ -81,7 +85,7 @@ export function UserForm({ open, onOpenChange, user, onSubmit }: UserFormProps) 
       } else {
         // Create mode
         if (!name.trim() || !email.trim()) {
-          setError('Name and email are required');
+          setError(translate(language, 'Name and email are required'));
           setSubmitting(false);
           return;
         }
@@ -104,7 +108,7 @@ export function UserForm({ open, onOpenChange, user, onSubmit }: UserFormProps) 
         }
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save user');
+      setError(err instanceof Error ? err.message : translate(language, 'Failed to save user'));
     } finally {
       setSubmitting(false);
     }
@@ -128,11 +132,11 @@ export function UserForm({ open, onOpenChange, user, onSubmit }: UserFormProps) 
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{isEditMode ? 'Edit User' : 'Create User'}</DialogTitle>
+          <DialogTitle>{translate(language, isEditMode ? 'Edit User' : 'Create User')}</DialogTitle>
           <DialogDescription>
             {isEditMode
-              ? 'Update user information. Leave fields unchanged to keep current values.'
-              : 'Create a new user account. A password will be automatically generated.'}
+              ? translate(language, 'Update user information. Leave fields unchanged to keep current values.')
+              : translate(language, 'Create a new user account. A password will be automatically generated.')}
           </DialogDescription>
         </DialogHeader>
 
@@ -140,11 +144,10 @@ export function UserForm({ open, onOpenChange, user, onSubmit }: UserFormProps) 
           <>
             <Alert>
               <CheckCircle2 className="h-4 w-4" />
-              <AlertTitle>User Created Successfully</AlertTitle>
+              <AlertTitle>{translate(language, 'User Created Successfully')}</AlertTitle>
               <AlertDescription>
                 <p className="mb-2">
-                  The user account has been created. Please save this password and share it
-                  with the user securely.
+                  {translate(language, 'The user account has been created. Please save this password and share it with the user securely.')}
                 </p>
                 <div className="mt-2 font-mono text-lg font-bold bg-white text-gray-900 p-3 rounded border border-gray-200 select-all">
                   {generatedPassword}
@@ -153,33 +156,33 @@ export function UserForm({ open, onOpenChange, user, onSubmit }: UserFormProps) 
             </Alert>
             <DialogFooter>
               <Button variant="outline" onClick={copyPasswordToClipboard} className="bg-white">
-                Copy to Clipboard
+                {translate(language, 'Copy to Clipboard')}
               </Button>
-              <Button onClick={handleClose}>Close</Button>
+              <Button onClick={handleClose}>{translate(language, 'Close')}</Button>
             </DialogFooter>
           </>
         ) : (
           <form onSubmit={handleSubmit}>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Name</Label>
+                <Label htmlFor="name">{translate(language, 'Name')}</Label>
                 <Input
                   id="name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="John Doe"
+                  placeholder={translate(language, 'John Doe')}
                   required
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">{translate(language, 'Email')}</Label>
                 <Input
                   id="email"
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="john@example.com"
+                  placeholder={translate(language, 'john@example.com')}
                   required
                 />
               </div>
@@ -195,41 +198,41 @@ export function UserForm({ open, onOpenChange, user, onSubmit }: UserFormProps) 
                       className="h-4 w-4 rounded border-gray-300"
                     />
                     <Label htmlFor="manualPassword" className="cursor-pointer">
-                      Set password manually (admins only)
+                      {translate(language, 'Set password manually (admins only)')}
                     </Label>
                   </div>
 
                   {isManualPassword && (
                     <div className="space-y-2 pl-6 animate-in fade-in slide-in-from-top-2">
-                      <Label htmlFor="password">Password</Label>
+                      <Label htmlFor="password">{translate(language, 'Password')}</Label>
                       <Input
                         id="password"
                         type="text"
                         value={manualPassword}
                         onChange={(e) => setManualPassword(e.target.value)}
-                        placeholder="Enter manual password"
+                        placeholder={translate(language, 'Enter manual password')}
                         className="font-mono"
                       />
                       <p className="text-xs text-muted-foreground">
-                        Note: You are responsible for sharing this password with the user.
+                        {translate(language, 'Note: You are responsible for sharing this password with the user.')}
                       </p>
                     </div>
                   )}
-
-                  <div className="flex items-center space-x-2 pt-2">
-                    <input
-                      type="checkbox"
-                      id="isAdmin"
-                      checked={isAdmin}
-                      onChange={(e) => setIsAdmin(e.target.checked)}
-                      className="h-4 w-4 rounded border-gray-300"
-                    />
-                    <Label htmlFor="isAdmin" className="cursor-pointer">
-                      Grant admin privileges
-                    </Label>
-                  </div>
                 </>
               )}
+
+              <div className="flex items-center space-x-2 pt-2">
+                <input
+                  type="checkbox"
+                  id="isAdmin"
+                  checked={isAdmin}
+                  onChange={(e) => setIsAdmin(e.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300"
+                />
+                <Label htmlFor="isAdmin" className="cursor-pointer">
+                  {translate(language, 'Administrator privileges')}
+                </Label>
+              </div>
 
               {error && (
                 <Alert variant="destructive">
@@ -246,16 +249,12 @@ export function UserForm({ open, onOpenChange, user, onSubmit }: UserFormProps) 
                 disabled={submitting}
                 className="bg-white text-gray-900 border-gray-200 hover:bg-gray-100"
               >
-                Cancel
+                {translate(language, 'Cancel')}
               </Button>
               <Button type="submit" disabled={submitting}>
                 {submitting
-                  ? isEditMode
-                    ? 'Updating...'
-                    : 'Creating...'
-                  : isEditMode
-                    ? 'Update User'
-                    : 'Create User'}
+                  ? translate(language, isEditMode ? 'Updating...' : 'Creating...')
+                  : translate(language, isEditMode ? 'Update User' : 'Create User')}
               </Button>
             </DialogFooter>
           </form>

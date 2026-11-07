@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { GiftPlaceholder } from '@/components/ui/GiftPlaceholder';
 import type { WishlistItem } from '@/types';
+import { useAuth } from '@/hooks/useAuth';
+import { translate } from '@/lib/i18n';
 
 interface WishlistItemCardProps {
   item: WishlistItem;
@@ -20,6 +22,7 @@ export function WishlistItemCard({
   onDelete,
   deleting = false,
 }: WishlistItemCardProps) {
+  const { language } = useAuth();
   const [imgError, setImgError] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
 
@@ -55,7 +58,7 @@ export function WishlistItemCard({
           {item.imageUrl && !imgError ? (
             <motion.img
               src={item.imageUrl}
-              alt={item.title || 'Product image'}
+              alt={item.title || translate(language, 'Product image')}
               className="w-full h-full object-contain p-4"
               loading="lazy"
               onError={() => setImgError(true)}
@@ -72,7 +75,7 @@ export function WishlistItemCard({
             className="absolute top-3 left-3 bg-[#1a472a]/90 text-white text-xs backdrop-blur-sm"
           >
             <Sparkles className="w-3 h-3 mr-1" />
-            Wishlist Item
+            {translate(language, 'Wishlist Item')}
           </Badge>
 
           {/* Quick action overlay on hover */}
@@ -89,7 +92,7 @@ export function WishlistItemCard({
                 onClick={handleDelete}
                 disabled={deleting}
                 className="bg-[#8b1538]/90 hover:bg-[#6d102c] backdrop-blur-sm shadow-lg"
-                aria-label="Delete item from wishlist"
+                aria-label={translate(language, 'Delete item from wishlist')}
               >
                 {deleting ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -103,7 +106,7 @@ export function WishlistItemCard({
 
         <CardContent className="p-4">
           <h3 className="font-medium text-gray-900 line-clamp-2 min-h-[3rem] leading-snug">
-            {item.title || 'Amazon Product'}
+            {item.title || translate(language, 'Amazon Product')}
           </h3>
           {displayPrice && (
             <div className="flex items-center gap-2 mt-3">
@@ -125,10 +128,10 @@ export function WishlistItemCard({
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center justify-center gap-2"
-              aria-label="View on Amazon"
+              aria-label={translate(language, 'View on Amazon')}
             >
               <ExternalLink className="w-4 h-4" />
-              View on Amazon
+              {translate(language, 'View on Amazon')}
             </a>
           </Button>
         </CardFooter>

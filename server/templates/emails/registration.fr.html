@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8">
+    <title>Votre mot de passe Secret Santa</title>
+  </head>
+  <body style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto;">
+    <h1 style="color: #c41e3a;">Bonjour {{name}},</h1>
+    <p>Votre compte Secret Santa est prêt. Utilisez ce mot de passe pour vous connecter :</p>
+    <p style="font-size: 18px; font-weight: bold; background-color: #f3f4f6; padding: 12px; border-radius: 4px;">{{password}}</p>
+    <p>Si vous aviez déjà un compte, ce mot de passe remplace le précédent.</p>
+    <p>Si vous n'êtes pas à l'origine de cette demande, désolé : votre mot de passe a quand même été remplacé.</p>
+    <p>Si vous ne souhaitez pas participer, <a href="{{loginUrl}}">connectez-vous avec ce mot de passe</a>, puis supprimez votre compte depuis le menu utilisateur.</p>
+    {{#if secondhandPreference}}<div style="margin-top: 24px; padding: 18px; border: 1px solid #86efac; border-radius: 10px; background-color: #f0fdf4; color: #166534;">
+      <p style="margin: 0; font-size: 18px; font-weight: bold;">🎁 Merci pour votre engagement anti-consumériste !</p>
+      <p style="margin: 8px 0 0;">Votre choix de faire et d’offrir un cadeau d’occasion, de récupération ou fait main fera vraiment plaisir. ♻️</p>
+    </div>{{/if}}
+  </body>
+</html>

@@ -23,6 +23,7 @@ import adminRoutes from './routes/admin.js';
 
 // Import middleware for session cleanup
 import { cleanupExpiredSessions } from './middleware/auth.js';
+import { getPublicConfig } from './utils/publicConfig.js';
 
 
 const app = express();
@@ -57,6 +58,15 @@ app.use('/api/auth', authRoutes);
 app.use('/api/match', matchRoutes);
 app.use('/api/wishlist', wishlistRoutes);
 app.use('/api/admin', adminRoutes);
+
+app.get('/api/config', (_req, res) => {
+  try {
+    res.json(getPublicConfig());
+  } catch (error) {
+    console.error('Invalid public configuration:', error);
+    res.status(500).json({ error: 'La configuration publique du serveur est invalide.' });
+  }
+});
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

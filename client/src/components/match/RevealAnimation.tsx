@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { FloatingParticle } from './FloatingParticle';
+import { useAuth } from '@/hooks/useAuth';
+import { translate } from '@/lib/i18n';
 
 interface RevealAnimationProps {
   recipientName: string;
@@ -27,6 +29,7 @@ function generateParticles() {
 }
 
 export function RevealAnimation({ recipientName, onComplete }: RevealAnimationProps) {
+  const { language } = useAuth();
   // Use useState with lazy initializer - only runs once on mount
   const [particles] = useState(generateParticles);
 
@@ -58,7 +61,7 @@ export function RevealAnimation({ recipientName, onComplete }: RevealAnimationPr
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, ease: 'easeOut' }}
         >
-          Your Secret Santa match is...
+          {translate(language, 'Your Secret Santa match is...')}
         </motion.p>
 
         {/* Recipient name */}
@@ -94,7 +97,7 @@ export function RevealAnimation({ recipientName, onComplete }: RevealAnimationPr
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 2.8 }}
         >
-          Time to start shopping!
+          {translate(language, 'Time to start shopping!')}
         </motion.p>
       </div>
     </div>

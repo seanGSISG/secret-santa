@@ -1,19 +1,24 @@
 import { useState, useCallback, useMemo } from 'react';
-import { Gift, AlertCircle } from 'lucide-react';
+import { AlertCircle, Hourglass, Trash2 } from 'lucide-react';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { useMatch } from '@/hooks/useMatch';
 import { RevealAnimation } from '@/components/match/RevealAnimation';
 import { MatchCard } from '@/components/match/MatchCard';
-import { EmptyState } from '@/components/ui/EmptyState';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { useAuth } from '@/hooks/useAuth';
+import { translate } from '@/lib/i18n';
+import { characters } from '@/assets/characters';
+import { DeleteAccountDialog } from '@/components/auth/DeleteAccountDialog';
 
 type PageState = 'loading' | 'reveal' | 'card' | 'error' | 'no-match';
 
 export function MatchPage() {
+  const { language } = useAuth();
   const { match, loading, error, refetch } = useMatch();
   const [revealCompleted, setRevealCompleted] = useState(false);
+  const [deleteAccountDialogOpen, setDeleteAccountDialogOpen] = useState(false);
 
   // Derive page state from data instead of using effect
   const pageState = useMemo((): PageState => {
@@ -34,33 +39,41 @@ export function MatchPage() {
     <PageContainer>
       <div className="min-h-[60vh] flex items-center justify-center">
         {pageState === 'loading' && (
-          <LoadingSpinner message="Loading your match..." className="py-20" />
+          <LoadingSpinner message={translate(language, 'Loading your match...')} className="py-20" />
         )}
 
         {pageState === 'error' && (
           <Alert variant="destructive" className="max-w-md">
             <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Unable to load your match</AlertTitle>
+            <AlertTitle>{translate(language, 'Unable to load your match')}</AlertTitle>
             <AlertDescription className="mt-2">
-              {error || 'An unexpected error occurred'}
+              {error || translate(language, 'An unexpected error occurred')}
             </AlertDescription>
             <Button
               variant="outline"
               onClick={refetch}
               className="mt-4"
             >
-              Try Again
+              {translate(language, 'Try Again')}
             </Button>
           </Alert>
         )}
 
         {pageState === 'no-match' && (
-          <EmptyState
-            icon={Gift}
-            title="No Match Yet"
-            description="You haven't been assigned a Secret Santa match yet. Check back soon!"
-            className="max-w-md bg-card/80 backdrop-blur-sm"
-          />
+          <section className="mx-4 max-w-lg rounded-3xl border border-white/60 bg-white/90 p-8 text-center shadow-2xl backdrop-blur-sm">
+            <div className="relative mx-auto mb-5 flex h-40 w-40 items-center justify-center rounded-full bg-gradient-to-br from-amber-100 via-red-50 to-emerald-100">
+              <img src={characters.santa} alt="" className="h-32 w-32 object-contain" />
+              <div className="absolute -right-1 top-2 flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-lg">
+                <Hourglass className="h-7 w-7 animate-pulse text-amber-600" aria-hidden="true" />
+              </div>
+            </div>
+            <h2 className="mb-3 font-serif text-2xl font-bold text-[#1a472a]">
+              {translate(language, 'The draw has not happened yet')}
+            </h2>
+            <p className="text-gray-600">
+              {translate(language, 'Santa is getting everything ready. Please be patient; your match will appear here as soon as the draw is complete.')}
+            </p>
+          </section>
         )}
 
         {pageState === 'reveal' && match?.recipient && (
@@ -79,6 +92,20 @@ export function MatchPage() {
           />
         )}
       </div>
+      <div className="mx-auto mt-10 w-full max-w-3xl border-t border-white/20 pt-6">
+        <Button
+          variant="ghost"
+          className="text-red-200 hover:bg-red-950/30 hover:text-white"
+          onClick={() => setDeleteAccountDialogOpen(true)}
+        >
+          <Trash2 className="mr-2 h-4 w-4" />
+          {translate(language, 'Delete my account')}
+        </Button>
+      </div>
+      <DeleteAccountDialog
+        open={deleteAccountDialogOpen}
+        onOpenChange={setDeleteAccountDialogOpen}
+      />
     </PageContainer>
   );
 }

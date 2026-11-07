@@ -8,60 +8,83 @@ import { MatchPage } from '@/pages/MatchPage';
 import { MyWishlistPage } from '@/pages/MyWishlistPage';
 import { RecipientWishlistPage } from '@/pages/RecipientWishlistPage';
 import { AdminPage } from '@/pages/AdminPage';
+import { RegistrationPage } from '@/pages/RegistrationPage';
+import { RegistrationSuccessPage } from '@/pages/RegistrationSuccessPage';
+import { translate } from '@/lib/i18n';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
+  const { user, loading, language } = useAuth();
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#faf8f5]">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1a472a] mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
+          <p className="mt-4 text-gray-600">{translate(language, 'Loading')}</p>
         </div>
       </div>
     );
   }
 
   if (!user) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/connexion" replace />;
   }
 
   return <>{children}</>;
 }
 
 function PublicRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
+  const { user, loading, language } = useAuth();
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#faf8f5]">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1a472a] mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
+          <p className="mt-4 text-gray-600">{translate(language, 'Loading')}</p>
         </div>
       </div>
     );
   }
 
   if (user) {
-    return <Navigate to="/match" replace />;
+    return <Navigate to={user.isAdmin ? '/admin' : '/match'} replace />;
   }
 
   return <>{children}</>;
 }
 
 function AppRoutes() {
+  const { wishlistEnabled } = useAuth();
+
   return (
     <Routes>
       <Route
-        path="/login"
+        path="/connexion"
         element={
           <PublicRoute>
             <LoginPage />
           </PublicRoute>
         }
       />
+      <Route
+        path="/inscription"
+        element={
+          <PublicRoute>
+            <RegistrationPage />
+          </PublicRoute>
+        }
+      />
+      <Route
+        path="/inscription/merci"
+        element={
+          <PublicRoute>
+            <RegistrationSuccessPage />
+          </PublicRoute>
+        }
+      />
+      <Route path="/login" element={<Navigate to="/connexion" replace />} />
+      <Route path="/register" element={<Navigate to="/inscription" replace />} />
       <Route
         path="/match"
         element={
@@ -70,22 +93,31 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
-      <Route
-        path="/wishlist"
-        element={
-          <ProtectedRoute>
-            <MyWishlistPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/recipient"
-        element={
-          <ProtectedRoute>
-            <RecipientWishlistPage />
-          </ProtectedRoute>
-        }
-      />
+      {wishlistEnabled ? (
+        <>
+          <Route
+            path="/wishlist"
+            element={
+              <ProtectedRoute>
+                <MyWishlistPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/recipient"
+            element={
+              <ProtectedRoute>
+                <RecipientWishlistPage />
+              </ProtectedRoute>
+            }
+          />
+        </>
+      ) : (
+        <>
+          <Route path="/wishlist" element={<Navigate to="/match" replace />} />
+          <Route path="/recipient" element={<Navigate to="/match" replace />} />
+        </>
+      )}
       <Route
         path="/admin"
         element={
@@ -96,11 +128,7 @@ function AppRoutes() {
       />
       <Route
         path="/"
-        element={
-          <ProtectedRoute>
-            <Navigate to="/match" replace />
-          </ProtectedRoute>
-        }
+        element={<PublicRoute><RegistrationPage /></PublicRoute>}
       />
     </Routes>
   );

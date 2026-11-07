@@ -17,6 +17,8 @@ import {
 } from '@/components/ui/alert';
 import { Pencil, Trash2, KeyRound, AlertTriangle, CheckCircle2, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuth } from '@/hooks/useAuth';
+import { translate } from '@/lib/i18n';
 
 interface UserTableProps {
   users: AdminUser[];
@@ -24,6 +26,7 @@ interface UserTableProps {
   onDelete: (id: number) => Promise<void>;
   onResetPassword: (id: number) => Promise<string>;
   currentUserId?: number;
+  wishlistEnabled: boolean;
 }
 
 export function UserTable({
@@ -32,7 +35,9 @@ export function UserTable({
   onDelete,
   onResetPassword,
   currentUserId,
+  wishlistEnabled,
 }: UserTableProps) {
+  const { language } = useAuth();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<AdminUser | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -52,11 +57,11 @@ export function UserTable({
     setDeleting(true);
     try {
       await onDelete(userToDelete.id);
-      toast.success(`${userToDelete.name} has been deleted`);
+      toast.success(language === 'fr' ? `${userToDelete.name} a été supprimé·e.` : `${userToDelete.name} has been deleted`);
       setDeleteDialogOpen(false);
       setUserToDelete(null);
     } catch {
-      toast.error('Failed to delete user. Please try again.');
+      toast.error(translate(language, 'Failed to delete user. Please try again.'));
     } finally {
       setDeleting(false);
     }
@@ -69,7 +74,7 @@ export function UserTable({
       setNewPassword(password);
       setPasswordDialogOpen(true);
     } catch {
-      toast.error('Failed to reset password. Please try again.');
+      toast.error(translate(language, 'Failed to reset password. Please try again.'));
     } finally {
       setResettingPassword(false);
     }
@@ -78,7 +83,7 @@ export function UserTable({
   const copyPasswordToClipboard = () => {
     if (newPassword) {
       navigator.clipboard.writeText(newPassword);
-      toast.success('Password copied to clipboard');
+      toast.success(translate(language, 'Password copied to clipboard'));
     }
   };
 
@@ -89,16 +94,22 @@ export function UserTable({
           <thead className="bg-gray-50">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Name
+                {translate(language, 'Name')}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Email
+                {translate(language, 'Email')}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Role
+                {translate(language, 'Role')}
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                {translate(language, 'Second-hand gift preference')}
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                {translate(language, 'Draw participation')}
               </th>
               <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Actions
+                {translate(language, 'Actions')}
               </th>
             </tr>
           </thead>
@@ -114,9 +125,17 @@ export function UserTable({
                 <td className="px-6 py-4 whitespace-nowrap">
                   {user.isAdmin && (
                     <Badge variant="default" className="text-xs">
-                      Admin
+                      {translate(language, 'Admin')}
                     </Badge>
                   )}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                  {user.secondhandPreference
+                    ? translate(language, 'Yes')
+                    : translate(language, 'No')}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                  {translate(language, user.participatesInDraw ? 'Included' : 'Excluded')}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <div className="flex items-center justify-end gap-2">
@@ -124,8 +143,8 @@ export function UserTable({
                       variant="ghost"
                       size="sm"
                       onClick={() => onEdit(user)}
-                      title="Edit user"
-                      aria-label="Edit user"
+                      title={translate(language, 'Edit user')}
+                      aria-label={translate(language, 'Edit user')}
                     >
                       <Pencil className="h-4 w-4" />
                     </Button>
@@ -134,8 +153,8 @@ export function UserTable({
                       size="sm"
                       onClick={() => handleResetPassword(user.id)}
                       disabled={resettingPassword}
-                      title="Reset password"
-                      aria-label="Reset password"
+                      title={translate(language, 'Reset password')}
+                      aria-label={translate(language, 'Reset password')}
                     >
                       <KeyRound className="h-4 w-4" />
                     </Button>
@@ -146,10 +165,10 @@ export function UserTable({
                       disabled={user.id === currentUserId}
                       title={
                         user.id === currentUserId
-                          ? 'Cannot delete your own account'
-                          : 'Delete user'
+                          ? translate(language, 'Cannot delete your own account')
+                          : translate(language, 'Delete user')
                       }
-                      aria-label="Delete user"
+                      aria-label={translate(language, 'Delete user')}
                     >
                       <Trash2 className="h-4 w-4 text-red-600" />
                     </Button>
@@ -165,20 +184,21 @@ export function UserTable({
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete User</DialogTitle>
+            <DialogTitle>{translate(language, 'Delete User')}</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete {userToDelete?.name}? This action cannot be
-              undone and will also delete:
+              {language === 'fr'
+                ? `Voulez-vous vraiment supprimer ${userToDelete?.name} ? Cette action est irréversible et supprimera aussi :`
+                : `Are you sure you want to delete ${userToDelete?.name}? This action cannot be undone and will also delete:`}
             </DialogDescription>
           </DialogHeader>
           <Alert variant="destructive">
             <AlertTriangle className="h-4 w-4" />
-            <AlertTitle>Warning</AlertTitle>
+            <AlertTitle>{translate(language, 'Warning')}</AlertTitle>
             <AlertDescription>
               <ul className="list-disc list-inside space-y-1 mt-2">
-                <li>All wishlist items</li>
-                <li>All match assignments involving this user</li>
-                <li>All active sessions</li>
+                {wishlistEnabled && <li>{translate(language, 'All wishlist items')}</li>}
+                <li>{translate(language, 'All match assignments involving this user')}</li>
+                <li>{translate(language, 'All active sessions')}</li>
               </ul>
             </AlertDescription>
           </Alert>
@@ -188,7 +208,7 @@ export function UserTable({
               onClick={() => setDeleteDialogOpen(false)}
               disabled={deleting}
             >
-              Cancel
+              {translate(language, 'Cancel')}
             </Button>
             <Button
               variant="destructive"
@@ -196,7 +216,7 @@ export function UserTable({
               disabled={deleting}
             >
               {deleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {deleting ? 'Deleting...' : 'Delete User'}
+              {translate(language, deleting ? 'Deleting...' : 'Delete User')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -206,15 +226,14 @@ export function UserTable({
       <Dialog open={passwordDialogOpen} onOpenChange={setPasswordDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Password Reset Successful</DialogTitle>
+            <DialogTitle>{translate(language, 'Password Reset Successful')}</DialogTitle>
             <DialogDescription>
-              The new password has been generated. Please save it securely and share it with
-              the user.
+              {translate(language, 'The new password has been generated. Please save it securely and share it with the user.')}
             </DialogDescription>
           </DialogHeader>
           <Alert>
             <CheckCircle2 className="h-4 w-4" />
-            <AlertTitle>New Password</AlertTitle>
+            <AlertTitle>{translate(language, 'New Password')}</AlertTitle>
             <AlertDescription>
               <div className="mt-2 font-mono text-lg font-bold bg-gray-100 p-3 rounded border">
                 {newPassword}
@@ -223,9 +242,9 @@ export function UserTable({
           </Alert>
           <DialogFooter>
             <Button variant="outline" onClick={copyPasswordToClipboard}>
-              Copy to Clipboard
+              {translate(language, 'Copy to Clipboard')}
             </Button>
-            <Button onClick={() => setPasswordDialogOpen(false)}>Close</Button>
+            <Button onClick={() => setPasswordDialogOpen(false)}>{translate(language, 'Close')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

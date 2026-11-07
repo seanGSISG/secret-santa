@@ -5,9 +5,10 @@ import { Button } from '@/components/ui/button';
 import { TreePine } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { translate } from '@/lib/i18n';
 
 export function LoginForm() {
-  const { login } = useAuth();
+  const { login, language } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -16,7 +17,7 @@ export function LoginForm() {
     e.preventDefault();
 
     if (!email || !password) {
-      toast.error('Please enter both email and password');
+      toast.error(translate(language, 'Please enter both email and password'));
       return;
     }
 
@@ -33,11 +34,11 @@ export function LoginForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="email">Email</Label>
+        <Label htmlFor="email">{translate(language, 'Email')}</Label>
         <Input
           id="email"
           type="email"
-          placeholder="you@example.com"
+          placeholder={translate(language, 'you@example.com')}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           disabled={loading}
@@ -46,11 +47,11 @@ export function LoginForm() {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="password">Password</Label>
+        <Label htmlFor="password">{translate(language, 'Password')}</Label>
         <Input
           id="password"
           type="password"
-          placeholder="Enter your password"
+          placeholder={translate(language, 'Enter your password')}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           disabled={loading}
@@ -60,11 +61,11 @@ export function LoginForm() {
 
       <Button type="submit" className="w-full" disabled={loading}>
         {loading ? (
-          'Signing in...'
+          translate(language, 'Signing in...')
         ) : (
           <span className="flex items-center gap-2">
             <TreePine className="w-4 h-4" />
-            Sign In
+            {translate(language, 'Sign In')}
           </span>
         )}
       </Button>

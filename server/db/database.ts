@@ -29,6 +29,17 @@ const schema = readFileSync(schemaPath, 'utf-8');
 // Based on docs, db.exec() exists for scripts.
 db.run(schema);
 
+const userColumns = db.query('PRAGMA table_info(users)').all() as { name: string }[];
+if (!userColumns.some((column) => column.name === 'language')) {
+  db.run("ALTER TABLE users ADD COLUMN language TEXT NOT NULL DEFAULT 'fr'");
+}
+if (!userColumns.some((column) => column.name === 'secondhand_preference')) {
+  db.run('ALTER TABLE users ADD COLUMN secondhand_preference INTEGER NOT NULL DEFAULT 1');
+}
+if (!userColumns.some((column) => column.name === 'participates_in_draw')) {
+  db.run('ALTER TABLE users ADD COLUMN participates_in_draw INTEGER NOT NULL DEFAULT 1');
+}
+
 console.log('Database initialized at:', dbPath);
 
 // Type definitions for database rows
@@ -39,6 +50,9 @@ export interface User {
   name: string;
   is_admin: number;
   has_seen_reveal: number;
+  language: 'fr' | 'en';
+  secondhand_preference: number;
+  participates_in_draw: number;
   created_at: string;
 }
 

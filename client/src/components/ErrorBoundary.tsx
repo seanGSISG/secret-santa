@@ -1,6 +1,9 @@
 import { Component, type ReactNode } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { AuthContext } from '@/context/AuthContext';
+import { translate } from '@/lib/i18n';
+import type { Language } from '@/types';
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -37,7 +40,11 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
 
   render() {
     if (this.state.hasError) {
-      return <ErrorFallback error={this.state.error} />;
+      return (
+        <AuthContext.Consumer>
+          {(auth) => <ErrorFallback error={this.state.error} language={auth?.language ?? 'fr'} />}
+        </AuthContext.Consumer>
+      );
     }
 
     return this.props.children;
@@ -46,9 +53,10 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
 
 interface ErrorFallbackProps {
   error: Error | null;
+  language: Language;
 }
 
-function ErrorFallback({ error }: ErrorFallbackProps) {
+function ErrorFallback({ error, language }: ErrorFallbackProps) {
   const isDevelopment = import.meta.env.DEV;
 
   const handleReload = () => {
@@ -65,23 +73,23 @@ function ErrorFallback({ error }: ErrorFallbackProps) {
         </div>
 
         <h1 className="text-3xl font-bold text-[#1a472a] mb-4">
-          Something went wrong
+          {translate(language, 'Something went wrong')}
         </h1>
 
         <p className="text-gray-600 mb-6">
-          We're sorry, but something unexpected happened. Please try reloading the page.
+          {translate(language, "We're sorry, but something unexpected happened. Please try reloading the page.")}
         </p>
 
         {isDevelopment && error && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-left">
-            <p className="text-sm font-semibold text-red-800 mb-2">Error Details (Dev Mode):</p>
+            <p className="text-sm font-semibold text-red-800 mb-2">{translate(language, 'Error Details (Dev Mode):')}</p>
             <p className="text-xs text-red-700 font-mono break-words">
               {error.message}
             </p>
             {error.stack && (
               <details className="mt-2">
                 <summary className="text-xs text-red-600 cursor-pointer hover:text-red-800">
-                  Stack trace
+                  {translate(language, 'Stack trace')}
                 </summary>
                 <pre className="text-xs text-red-600 mt-2 overflow-x-auto whitespace-pre-wrap">
                   {error.stack}
@@ -95,7 +103,7 @@ function ErrorFallback({ error }: ErrorFallbackProps) {
           onClick={handleReload}
           className="bg-[#1a472a] hover:bg-[#1a472a]/90 text-white"
         >
-          Reload Page
+          {translate(language, 'Reload Page')}
         </Button>
       </div>
     </div>

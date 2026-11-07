@@ -2,7 +2,7 @@ import { motion } from 'framer-motion';
 
 export function SnowOverlay() {
     return (
-        <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden" aria-hidden="true">
+        <div className="fixed inset-0 pointer-events-none z-10 overflow-hidden" aria-hidden="true">
             {[...Array(20)].map((_, i) => (
                 <motion.div
                     key={i}
