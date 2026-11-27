@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Gift, AlertCircle } from 'lucide-react';
+import { toast } from 'sonner';
 import { characters } from '@/assets/characters';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { useWishlist } from '@/hooks/useWishlist';
@@ -14,7 +15,10 @@ export function MyWishlistPage() {
   const [deletingId, setDeletingId] = useState<number | null>(null);
 
   const handleAdd = async (url: string) => {
-    await addItem(url);
+    const item = await addItem(url);
+    if (item.warning) {
+      toast.info(item.warning);
+    }
   };
 
   const handleDelete = async (id: number) => {

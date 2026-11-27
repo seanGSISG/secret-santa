@@ -2,11 +2,14 @@ import { useState, useEffect, useCallback } from 'react';
 import { api } from '@/lib/api';
 import type { WishlistItem } from '@/types';
 
+/** An item as the server returns it. A warning means that the shop did not send the product details. */
+export type AddedWishlistItem = WishlistItem & { warning?: string };
+
 interface UseWishlistReturn {
   items: WishlistItem[];
   loading: boolean;
   error: string | null;
-  addItem: (amazonUrl: string) => Promise<void>;
+  addItem: (amazonUrl: string) => Promise<AddedWishlistItem>;
   deleteItem: (id: number) => Promise<void>;
   refetch: () => Promise<void>;
 }
@@ -38,11 +41,12 @@ export function useWishlist(): UseWishlistReturn {
     fetchWishlist();
   }, [fetchWishlist]);
 
-  const addItem = useCallback(async (amazonUrl: string) => {
+  const addItem = useCallback(async (amazonUrl: string): Promise<AddedWishlistItem> => {
     setError(null);
     try {
-      const newItem = await api.post<WishlistItem>('/wishlist', { amazonUrl });
+      const newItem = await api.post<AddedWishlistItem>('/wishlist', { amazonUrl });
       setItems((prev) => [...prev, newItem]);
+      return newItem;
     } catch (err) {
       if (err instanceof Error) {
         setError(err.message);

@@ -87,6 +87,14 @@ export interface ResetPasswordResponse {
   password: string;
 }
 
+export interface DeleteUserResponse {
+  success: boolean;
+  /** True when the deletion broke the exchange and the server cleared all matches. */
+  cleared?: boolean;
+  /** The people who now give to someone else. */
+  changedGivers?: string[];
+}
+
 export interface AdminMatch {
   id: number;
   giver: {

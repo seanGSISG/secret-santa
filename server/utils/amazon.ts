@@ -32,8 +32,9 @@ export async function fetchProductInfo(url: string): Promise<{
   };
 
   try {
-    // Fetch the Amazon page
+    // Fetch the Amazon page. The timeout stops a slow answer from holding the request open.
     const response = await fetch(url, {
+      signal: AbortSignal.timeout(8000),
       headers: {
         'User-Agent':
           'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',

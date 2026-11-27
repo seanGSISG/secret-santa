@@ -13,7 +13,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import { UserPlus, Users, Shuffle, TreePine } from 'lucide-react';
-import type { AdminUser, CreateUserRequest, UpdateUserRequest } from '@/types';
+import type { AdminUser, CreateUserRequest, DeleteUserResponse, UpdateUserRequest } from '@/types';
 
 export function AdminPage() {
   const { user } = useAuth();
@@ -71,8 +71,11 @@ export function AdminPage() {
     }
   };
 
-  const handleDeleteUser = async (id: number) => {
-    await deleteUser(id);
+  const handleDeleteUser = async (id: number): Promise<DeleteUserResponse> => {
+    const result = await deleteUser(id);
+    // A deletion can change the matches, so the table must show the new state
+    await fetchMatches();
+    return result;
   };
 
   const handleResetPassword = async (id: number): Promise<string> => {

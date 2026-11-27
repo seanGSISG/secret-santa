@@ -18,7 +18,7 @@ router.get('/', requireAuth, async (req, res) => {
 
     // Get match for current year
     const match = db
-      .prepare<[number, number], Match>(
+      .prepare<Match, [number, number]>(
         'SELECT * FROM matches WHERE giver_id = ? AND year = ?'
       )
       .get(userId, currentYear);
@@ -30,7 +30,7 @@ router.get('/', requireAuth, async (req, res) => {
 
     // Get recipient info
     const recipient = db
-      .prepare<[number], User>('SELECT * FROM users WHERE id = ?')
+      .prepare<User, [number]>('SELECT * FROM users WHERE id = ?')
       .get(match.receiver_id);
 
     if (!recipient) {

@@ -49,15 +49,21 @@ The AI will:
 
 ---
 
-## Quick Deploy (One-Click)
+## Quick Deploy
 
-Deploy instantly to a cloud provider:
+### Railway
 
-[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/template/secret-santa?referralCode=secret-santa)
+1. Create a project at [Railway](https://railway.com) from this repository. Railway builds the Docker image.
+2. Add a **volume** with the mount path `/app/data`. Without a volume, the database is lost on each deploy.
+3. Set the environment variables (see [Email Setup](#step-3-set-up-email-optional-but-recommended) below).
 
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/YOUR_USERNAME/secret-santa)
+Railway's free plan has no custom domains and sleeps after a time without requests. See [Railway plans](https://railway.com/pricing).
 
-> After deploying, you'll need to set your environment variables (see [Email Setup](#step-3-set-up-email-optional-but-recommended) below).
+### Render
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/seanGSISG/secret-santa)
+
+> The Render free plan cannot keep a disk. Use the Starter plan or higher, or the database is lost on each deploy.
 
 ---
 
@@ -96,7 +102,7 @@ After installing:
 **Option A: Using Git (if you have it installed)**
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/secret-santa.git
+git clone https://github.com/seanGSISG/secret-santa.git
 cd secret-santa
 ```
 
@@ -214,7 +220,7 @@ This account can manage users and generate Secret Santa matches!
 1. Log in with your admin account
 2. Go to the **Admin** tab
 3. Click **Add User** for each family member
-4. Share their login credentials (they'll receive a welcome email if you set up email)
+4. Share the password that the app shows you. The welcome email does not contain the password.
 
 ---
 
@@ -390,19 +396,21 @@ Then log out and back in.
 
 **Frontend:** React 19, TypeScript, Vite 6, Tailwind CSS 4, Framer Motion, shadcn/ui
 
-**Backend:** Express, TypeScript, SQLite (better-sqlite3), bcrypt, cheerio
+**Backend:** Bun, Express, TypeScript, Bun's built-in SQLite and password hashing, cheerio
 
 ### Development Setup
 
-**Prerequisites:** Node.js 20+, Bun (for client)
+**Prerequisites:** [Bun](https://bun.sh) 1.4 or later, for the server and the client
 
 **Server:**
 
 ```bash
 cd server
-npm install
-npm run dev # Runs on port 3001
+bun install
+bun run dev # Runs on port 3001
 ```
+
+`npm install`, `npm run dev`, and `npm run build` do not work for the server: the server uses Bun APIs.
 
 **Client:**
 
@@ -429,11 +437,6 @@ secret-santa/
 │   └── services/        # Email service
 └── docker-compose.yml
 ```
-
-### Test Credentials
-
-- **Email:** admin@test.com
-- **Password:** password123
 
 </details>
 
