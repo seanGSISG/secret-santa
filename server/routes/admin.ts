@@ -1,5 +1,6 @@
 import { Router } from 'express';
-import { db, User } from '../db/database.js';
+import { randomInt } from 'crypto';
+import { db, User, Match } from '../db/database.js';
 import { requireAuth, requireAdmin } from '../middleware/auth.js';
 import { generatePassword, hashPassword } from '../utils/password.js';
 import { sendMatchEmail, sendWelcomeEmail } from '../services/email.js';
@@ -11,6 +12,70 @@ const router = Router();
  */
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+const MIN_PASSWORD_LENGTH = 8;
+
+/**
+ * Return a copy of a list in a random order. The order of a draw must not be predictable,
+ * so the shuffle uses the cryptographically secure generator of the runtime.
+ */
+function shuffled<T>(items: readonly T[]): T[] {
+  const list = [...items];
+  for (let i = list.length - 1; i > 0; i--) {
+    const j = randomInt(i + 1);
+    [list[i], list[j]] = [list[j], list[i]];
+  }
+  return list;
+}
+
+/**
+ * Check a manual edit of the matches. In a valid exchange every giver gives one gift,
+ * every person receives one gift, nobody gives to themselves, and every id is a user.
+ * The list must contain every person, so a closed cycle of two people among six is not valid.
+ * Return true, or the reason why the edit is not valid.
+ */
+function validateMatches(matches: Array<{ giver_id?: unknown; receiver_id?: unknown }>): true | string {
+  const userIds = new Set(
+    db.prepare<Pick<User, 'id'>, []>('SELECT id FROM users').all().map((user) => user.id)
+  );
+  const givers = new Set<number>();
+  const receivers = new Set<number>();
+
+  for (const match of matches) {
+    const { giver_id, receiver_id } = match ?? {};
+
+    if (typeof giver_id !== 'number' || typeof receiver_id !== 'number') {
+      return 'Invalid match structure';
+    }
+    if (!userIds.has(giver_id) || !userIds.has(receiver_id)) {
+      return 'Every match must use two people from the list';
+    }
+    if (giver_id === receiver_id) {
+      return 'A person cannot give a gift to themselves';
+    }
+    if (givers.has(giver_id)) {
+      return 'A person cannot give more than one gift';
+    }
+    if (receivers.has(receiver_id)) {
+      return 'A person cannot receive more than one gift';
+    }
+
+    givers.add(giver_id);
+    receivers.add(receiver_id);
+  }
+
+  for (const receiver of receivers) {
+    if (!givers.has(receiver)) {
+      return 'Every person who receives a gift must also give one';
+    }
+  }
+
+  if (givers.size !== userIds.size) {
+    return 'Every person must give one gift and receive one gift';
+  }
+
+  return true;
+}
+
 // All admin routes require authentication and admin privileges
 router.use(requireAuth);
 router.use(requireAdmin);
@@ -20,30 +85,9 @@ router.use(requireAdmin);
  * List all users
  */
 
-// Test email route (Debug only)
-router.post('/test-email', async (req, res) => {
-  try {
-    console.log('Inside test-email route', req.body);
-    const { email } = req.body;
-    if (!email) {
-      res.status(400).json({ error: 'Email required' });
-      return;
-    }
-
-    console.log(`Testing email to ${email}...`);
-    // Dynamic import to ensure we get the latest version if hot-reloaded (though standard import is fine usually)
-    const { sendWelcomeEmail } = await import('../services/email.js');
-    await sendWelcomeEmail(email, 'Test User');
-    res.json({ success: true, message: 'Email queued' });
-  } catch (error) {
-    console.error('Test email error:', error);
-    res.status(500).json({ error: String(error) });
-  }
-});
-
 router.get('/users', async (req, res) => {
   try {
-    const users = db.prepare<[], User>('SELECT * FROM users ORDER BY name').all();
+    const users = db.prepare<User, []>('SELECT * FROM users ORDER BY name').all();
 
     res.json({
       users: users.map((user: User) => ({
@@ -67,11 +111,20 @@ router.get('/users', async (req, res) => {
  */
 router.post('/users', async (req, res) => {
   try {
-    const { email, name, isAdmin, password: manualPassword } = req.body;
+    const { email, name, isAdmin, password: manualPassword } = req.body ?? {};
 
     // Validate required fields
-    if (!email || !name) {
+    if (typeof email !== 'string' || typeof name !== 'string' || !email || !name) {
       res.status(400).json({ error: 'Email and name required' });
+      return;
+    }
+
+    // A password that the admin types must be long enough to resist guessing
+    if (
+      manualPassword !== undefined &&
+      (typeof manualPassword !== 'string' || manualPassword.length < MIN_PASSWORD_LENGTH)
+    ) {
+      res.status(400).json({ error: `Password must have at least ${MIN_PASSWORD_LENGTH} characters` });
       return;
     }
 
@@ -93,7 +146,7 @@ router.post('/users', async (req, res) => {
 
     // Check if email already exists
     const existing = db
-      .prepare<[string], User>('SELECT * FROM users WHERE email = ?')
+      .prepare<User, [string]>('SELECT * FROM users WHERE email = ?')
       .get(sanitizedEmail);
 
     if (existing) {
@@ -110,11 +163,11 @@ router.post('/users', async (req, res) => {
       .prepare(
         'INSERT INTO users (email, password_hash, name, is_admin) VALUES (?, ?, ?, ?)'
       )
-      .run(sanitizedEmail, passwordHash, sanitizedName, isAdmin ? 1 : 0);
+      .run(sanitizedEmail, passwordHash, sanitizedName, isAdmin === true ? 1 : 0);
 
     // Get created user
     const user = db
-      .prepare<[number], User>('SELECT * FROM users WHERE id = ?')
+      .prepare<User, [number]>('SELECT * FROM users WHERE id = ?')
       .get(result.lastInsertRowid as number);
 
     if (!user) {
@@ -138,7 +191,7 @@ router.post('/users', async (req, res) => {
     (async () => {
       try {
         console.log(`Sending welcome email to ${user.email}...`);
-        await sendWelcomeEmail(user.email, user.name, password);
+        await sendWelcomeEmail(user.email, user.name);
       } catch (emailError) {
         console.error('Error sending welcome email:', emailError);
       }
@@ -169,26 +222,76 @@ router.delete('/users/:id', async (req, res) => {
     }
 
     // Check if user exists
-    const user = db.prepare<[number], User>('SELECT * FROM users WHERE id = ?').get(userId);
+    const user = db.prepare<User, [number]>('SELECT * FROM users WHERE id = ?').get(userId);
 
     if (!user) {
       res.status(404).json({ error: 'User not found' });
       return;
     }
 
-    // Delete user (cascading will handle related records via foreign keys)
-    // But SQLite doesn't cascade by default, so delete manually
-    // Use transaction to ensure atomicity
-    const deleteUserAndRelatedData = db.transaction((userId: number) => {
+    // Delete the user and keep the exchange complete. A match row that names the user
+    // is deleted with the user, so the repair writes new rows after the delete.
+    const deleteAndRepair = db.transaction((userId: number) => {
+      const year = new Date().getFullYear();
+      const incoming = db
+        .prepare<Match, [number, number]>('SELECT * FROM matches WHERE receiver_id = ? AND year = ?')
+        .get(userId, year);
+      const outgoing = db
+        .prepare<Match, [number, number]>('SELECT * FROM matches WHERE giver_id = ? AND year = ?')
+        .get(userId, year);
+
+      // A pair that only gave to each other leaves one person without a partner.
+      const partner =
+        incoming && outgoing && incoming.giver_id === outgoing.receiver_id ? incoming.giver_id : null;
+      const host =
+        partner === null
+          ? undefined
+          : db
+              .prepare<Match, [number, number, number]>(
+                'SELECT * FROM matches WHERE year = ? AND giver_id NOT IN (?, ?) LIMIT 1'
+              )
+              .get(year, partner, userId);
+
       db.prepare('DELETE FROM wishlist_items WHERE user_id = ?').run(userId);
       db.prepare('DELETE FROM matches WHERE giver_id = ? OR receiver_id = ?').run(userId, userId);
       db.prepare('DELETE FROM sessions WHERE user_id = ?').run(userId);
       db.prepare('DELETE FROM users WHERE id = ?').run(userId);
+
+      const insertMatch = db.prepare('INSERT INTO matches (giver_id, receiver_id, year) VALUES (?, ?, ?)');
+      let changedGivers: number[] = [];
+
+      if (incoming && outgoing && partner === null) {
+        // A chain of three or more people: the person who gave to this user now gives to
+        // the person this user gave to.
+        insertMatch.run(incoming.giver_id, outgoing.receiver_id, year);
+        changedGivers = [incoming.giver_id];
+      } else if (partner !== null && host) {
+        // The pair: move the other person into another chain.
+        db.prepare('UPDATE matches SET receiver_id = ? WHERE id = ?').run(partner, host.id);
+        insertMatch.run(partner, host.receiver_id, year);
+        changedGivers = [partner, host.giver_id];
+      } else if (incoming || outgoing) {
+        // No safe repair exists (for example an exchange of two people). Clear the year.
+        db.prepare('DELETE FROM matches WHERE year = ?').run(year);
+        db.prepare('UPDATE users SET has_seen_reveal = 0').run();
+        return { cleared: true, changedGivers: [] as number[] };
+      }
+
+      // The people who got a different recipient see the reveal again
+      const resetReveal = db.prepare('UPDATE users SET has_seen_reveal = 0 WHERE id = ?');
+      for (const giver of changedGivers) {
+        resetReveal.run(giver);
+      }
+      return { cleared: false, changedGivers };
     });
 
-    deleteUserAndRelatedData(userId);
+    const result = deleteAndRepair(userId);
+    const findName = db.prepare<Pick<User, 'name'>, [number]>('SELECT name FROM users WHERE id = ?');
+    const changedGivers = result.changedGivers
+      .map((id) => findName.get(id)?.name)
+      .filter((name): name is string => name !== undefined);
 
-    res.json({ success: true });
+    res.json({ success: true, cleared: result.cleared, changedGivers });
   } catch (error) {
     console.error('Delete user error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -203,7 +306,12 @@ router.delete('/users/:id', async (req, res) => {
 router.put('/users/:id', async (req, res) => {
   try {
     const userId = parseInt(req.params.id, 10);
-    const { name, email } = req.body;
+    const { name, email } = req.body ?? {};
+
+    if ((name !== undefined && typeof name !== 'string') || (email !== undefined && typeof email !== 'string')) {
+      res.status(400).json({ error: 'Name and email must be text' });
+      return;
+    }
 
     if (isNaN(userId)) {
       res.status(400).json({ error: 'Invalid user ID' });
@@ -211,7 +319,7 @@ router.put('/users/:id', async (req, res) => {
     }
 
     // Check if user exists
-    const user = db.prepare<[number], User>('SELECT * FROM users WHERE id = ?').get(userId);
+    const user = db.prepare<User, [number]>('SELECT * FROM users WHERE id = ?').get(userId);
 
     if (!user) {
       res.status(404).json({ error: 'User not found' });
@@ -243,7 +351,7 @@ router.put('/users/:id', async (req, res) => {
     // If email is being updated, check uniqueness
     if (sanitizedEmail && sanitizedEmail !== user.email.toLowerCase()) {
       const existing = db
-        .prepare<[string, number], User>(
+        .prepare<User, [string, number]>(
           'SELECT * FROM users WHERE email = ? AND id != ?'
         )
         .get(sanitizedEmail, userId);
@@ -270,7 +378,7 @@ router.put('/users/:id', async (req, res) => {
 
     // Get updated user
     const updatedUser = db
-      .prepare<[number], User>('SELECT * FROM users WHERE id = ?')
+      .prepare<User, [number]>('SELECT * FROM users WHERE id = ?')
       .get(userId);
 
     if (!updatedUser) {
@@ -308,7 +416,7 @@ router.put('/users/:id/reset-password', async (req, res) => {
     }
 
     // Check if user exists
-    const user = db.prepare<[number], User>('SELECT * FROM users WHERE id = ?').get(userId);
+    const user = db.prepare<User, [number]>('SELECT * FROM users WHERE id = ?').get(userId);
 
     if (!user) {
       res.status(404).json({ error: 'User not found' });
@@ -320,7 +428,7 @@ router.put('/users/:id/reset-password', async (req, res) => {
     const passwordHash = await hashPassword(password);
 
     // Update password
-    db.prepare('UPDATE users SET password_hash = ?, has_seen_reveal = 0 WHERE id = ?').run(
+    db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(
       passwordHash,
       userId
     );
@@ -359,7 +467,7 @@ router.get('/matches', async (req, res) => {
 
     // Get all matches with user names
     const matches = db
-      .prepare<[number], MatchWithNames>(
+      .prepare<MatchWithNames, [number]>(
         `SELECT
           m.id,
           m.giver_id,
@@ -409,7 +517,7 @@ router.post('/matches/generate', async (req, res) => {
     const currentYear = new Date().getFullYear();
 
     // Get all users
-    const users = db.prepare<[], User>('SELECT * FROM users ORDER BY RANDOM()').all();
+    const users = shuffled(db.prepare<User, []>('SELECT * FROM users').all());
 
     if (users.length < 2) {
       res.status(400).json({ error: 'Need at least 2 users to generate matches' });
@@ -451,7 +559,7 @@ router.post('/matches/generate', async (req, res) => {
 
     // Return created matches with names
     const createdMatches = db
-      .prepare<[number], MatchWithNames>(
+      .prepare<MatchWithNames, [number]>(
         `SELECT
           m.id,
           m.giver_id,
@@ -489,17 +597,11 @@ router.post('/matches/generate', async (req, res) => {
     // Send emails asynchronously
     (async () => {
       try {
-        console.log(`Starting to send match emails to ${createdMatches.length} matches...`);
-        // Send emails to all givers
+        // The log must never contain a match: a log is not a secret place.
+        console.log(`Sending ${createdMatches.length} match emails...`);
         for (const match of createdMatches) {
           if (match.giver_email) {
-            console.log(`Sending match email to ${match.giver_email} (match: ${match.receiver_name})`);
-            await sendMatchEmail(
-              { name: match.giver_name, email: match.giver_email },
-              match.receiver_name
-            );
-          } else {
-            console.warn(`Skipping match email for user ${match.giver_id} (no email)`);
+            await sendMatchEmail({ name: match.giver_name, email: match.giver_email });
           }
         }
         console.log('Finished sending match emails');
@@ -519,7 +621,7 @@ router.post('/matches/generate', async (req, res) => {
  */
 router.put('/matches', async (req, res) => {
   try {
-    const { matches } = req.body; // Array of { giver_id, receiver_id }
+    const { matches } = req.body ?? {}; // Array of { giver_id, receiver_id }
     const currentYear = new Date().getFullYear();
 
     if (!Array.isArray(matches) || matches.length === 0) {
@@ -527,37 +629,44 @@ router.put('/matches', async (req, res) => {
       return;
     }
 
-    // Basic validation of input structure
-    for (const match of matches) {
-      if (!match.giver_id || !match.receiver_id) {
-        res.status(400).json({ error: 'Invalid match structure' });
-        return;
-      }
+    const invalidReason = validateMatches(matches);
+    if (invalidReason !== true) {
+      res.status(400).json({ error: invalidReason });
+      return;
     }
 
     // Perform update in transaction
     const updateMatches = db.transaction((year: number, matchList: Array<{ giver_id: number; receiver_id: number }>) => {
-      // 1. Delete existing matches for year
+      const previous = new Map(
+        db
+          .prepare<Match, [number]>('SELECT * FROM matches WHERE year = ?')
+          .all(year)
+          .map((match) => [match.giver_id, match.receiver_id])
+      );
+
       db.prepare('DELETE FROM matches WHERE year = ?').run(year);
 
-      // 2. Insert new matches
       const insertStmt = db.prepare(
         'INSERT INTO matches (giver_id, receiver_id, year) VALUES (?, ?, ?)'
       );
-
       for (const match of matchList) {
         insertStmt.run(match.giver_id, match.receiver_id, year);
       }
 
-      // 3. Reset reveal status for all users (optional, but good practice if matches change)
-      db.prepare('UPDATE users SET has_seen_reveal = 0').run();
+      // Only the people who got a different recipient see the reveal again
+      const resetReveal = db.prepare('UPDATE users SET has_seen_reveal = 0 WHERE id = ?');
+      for (const match of matchList) {
+        if (previous.get(match.giver_id) !== match.receiver_id) {
+          resetReveal.run(match.giver_id);
+        }
+      }
     });
 
     updateMatches(currentYear, matches);
 
     // Return updated matches
     const updatedMatches = db
-      .prepare<[number], MatchWithNames>(
+      .prepare<MatchWithNames, [number]>(
         `SELECT
           m.id,
           m.giver_id,

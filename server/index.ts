@@ -1,4 +1,4 @@
-import express from 'express'; // Forced reload
+import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import { fileURLToPath } from 'url';
@@ -6,11 +6,10 @@ import { dirname, join } from 'path';
 import { existsSync } from 'fs';
 import dotenv from 'dotenv';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
-// Explicitly load .env from parent directory
-dotenv.config({ path: join(__dirname, '../.env') });
+// The README tells users to create server/.env. Bun loads it only when the process starts in server/.
+dotenv.config({ path: join(__dirname, '.env') });
 
 // Import database to initialize it
 import './db/database.js';
@@ -24,13 +23,19 @@ import adminRoutes from './routes/admin.js';
 // Import middleware for session cleanup
 import { cleanupExpiredSessions } from './middleware/auth.js';
 
-
 const app = express();
-const PORT = process.env.PORT || 3001;
+app.disable('x-powered-by');
+const PORT = Number(process.env.PORT) || 3001;
 
-// Debug all requests (very first middleware)
+// Security headers. The CSP permits the Google Fonts stylesheet that the client imports.
 app.use((req, res, next) => {
-  console.log('[DEBUG] Request:', req.method, req.path);
+  res.setHeader(
+    'Content-Security-Policy',
+    "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+  );
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Referrer-Policy', 'no-referrer');
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
   next();
 });
 
@@ -63,26 +68,22 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// Unknown API paths return JSON, not the app page
+app.use('/api', (req, res) => {
+  res.status(404).json({ error: 'Not found' });
+});
+
 // Serve static files from client/dist in production
 if (process.env.NODE_ENV === 'production') {
   const clientDistPath = join(__dirname, '../client/dist');
-  console.log('Static files path:', clientDistPath);
-  console.log('Path exists:', existsSync(clientDistPath));
 
   if (existsSync(clientDistPath)) {
-    console.log('Setting up static file serving...');
     app.use(express.static(clientDistPath));
 
     // Serve index.html for all non-API routes (SPA routing)
-    app.get('/', (req, res) => {
-      console.log('Root route hit');
-      res.sendFile(join(clientDistPath, 'index.html'));
-    });
     app.get('*', (req, res) => {
-      console.log('Catch-all route hit:', req.path);
       res.sendFile(join(clientDistPath, 'index.html'));
     });
-    console.log('Static middleware configured');
   } else {
     console.warn('Client dist directory not found. Run client build first.');
   }
@@ -91,12 +92,17 @@ if (process.env.NODE_ENV === 'production') {
 // Error handling middleware
 app.use(
   (
-    err: Error,
+    err: Error & { type?: string },
     req: express.Request,
     res: express.Response,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     next: express.NextFunction
   ) => {
+    if (err.type === 'entity.parse.failed') {
+      res.status(400).json({ error: 'Invalid JSON body' });
+      return;
+    }
+
     if (process.env.NODE_ENV !== 'production') {
       console.error('Error:', err);
     }
@@ -109,8 +115,6 @@ app.listen(PORT, () => {
   if (process.env.NODE_ENV !== 'production') {
     console.log(`Server running on http://localhost:${PORT}`);
     console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-    console.log(`Email User: ${process.env.EMAIL_USER || 'NOT SET'}`);
-    console.log(`Email Pass Length: ${process.env.EMAIL_PASS ? process.env.EMAIL_PASS.length : 0}`);
   }
 
   // Clean up expired sessions on startup

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { AdminUser } from '@/types';
+import type { AdminUser, DeleteUserResponse } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -21,7 +21,7 @@ import { toast } from 'sonner';
 interface UserTableProps {
   users: AdminUser[];
   onEdit: (user: AdminUser) => void;
-  onDelete: (id: number) => Promise<void>;
+  onDelete: (id: number) => Promise<DeleteUserResponse | void>;
   onResetPassword: (id: number) => Promise<string>;
   currentUserId?: number;
 }
@@ -51,8 +51,15 @@ export function UserTable({
 
     setDeleting(true);
     try {
-      await onDelete(userToDelete.id);
+      const result = await onDelete(userToDelete.id);
       toast.success(`${userToDelete.name} has been deleted`);
+      if (result?.changedGivers?.length) {
+        const names = result.changedGivers.join(' and ');
+        toast.info(`${names} now ${result.changedGivers.length === 1 ? 'gives' : 'give'} to a different person. Ask them to open their match again.`);
+      }
+      if (result?.cleared) {
+        toast.warning('The exchange could not be repaired. All matches were cleared. Generate new matches.');
+      }
       setDeleteDialogOpen(false);
       setUserToDelete(null);
     } catch {

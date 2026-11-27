@@ -32,7 +32,7 @@ export async function requireAuth(
     // Get session from database
     const now = new Date().toISOString();
     const session = db
-      .prepare<[string, string], Session>(
+      .prepare<Session, [string, string]>(
         'SELECT * FROM sessions WHERE id = ? AND expires_at > ?'
       )
       .get(sessionId, now);
@@ -46,7 +46,7 @@ export async function requireAuth(
 
     // Get user from database
     const user = db
-      .prepare<[number], User>('SELECT * FROM users WHERE id = ?')
+      .prepare<User, [number]>('SELECT * FROM users WHERE id = ?')
       .get(session.user_id);
 
     if (!user) {

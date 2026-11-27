@@ -176,7 +176,7 @@ Wait for email.
 
 Wait for name.
 
-> What password would you like? (minimum 6 characters)
+> What password would you like? (at least 8 characters)
 
 Wait for password.
 

@@ -15,7 +15,7 @@ router.get('/', requireAuth, async (req, res) => {
     const userId = req.user!.id;
 
     const items = db
-      .prepare<[number], WishlistItem>(
+      .prepare<WishlistItem, [number]>(
         'SELECT * FROM wishlist_items WHERE user_id = ? ORDER BY added_at DESC'
       )
       .all(userId);
@@ -88,7 +88,7 @@ router.post('/', requireAuth, async (req, res) => {
 
     // Get the inserted item
     const item = db
-      .prepare<[number], WishlistItem>('SELECT * FROM wishlist_items WHERE id = ?')
+      .prepare<WishlistItem, [number]>('SELECT * FROM wishlist_items WHERE id = ?')
       .get(result.lastInsertRowid as number);
 
     if (!item) {
@@ -101,7 +101,7 @@ router.post('/', requireAuth, async (req, res) => {
       // Find who is the Santa for this user (giver)
       const currentYear = new Date().getFullYear();
       const match = db
-        .prepare<[number, number], Match>(
+        .prepare<Match, [number, number]>(
           'SELECT * FROM matches WHERE receiver_id = ? AND year = ?'
         )
         .get(userId, currentYear);
@@ -109,18 +109,13 @@ router.post('/', requireAuth, async (req, res) => {
       if (match) {
         // Get Santa's email
         const santa = db
-          .prepare<[number], User>('SELECT * FROM users WHERE id = ?')
+          .prepare<User, [number]>('SELECT * FROM users WHERE id = ?')
           .get(match.giver_id);
 
-        // Get user's name (giftee)
-        const giftee = db
-          .prepare<[number], User>('SELECT * FROM users WHERE id = ?')
-          .get(userId);
-
-        if (santa && giftee && santa.email) {
+        if (santa && santa.email) {
           console.log(`Sending wishlist update email to ${santa.email}...`);
           // Don't await this to avoid blocking the response
-          sendWishlistUpdateEmail(santa.email, santa.name, giftee.name, productInfo.title || 'New Item')
+          sendWishlistUpdateEmail(santa.email, santa.name, productInfo.title || 'New item')
             .then(() => console.log(`Wishlist email sent to ${santa.email}`))
             .catch(e => console.error('Failed to send wishlist email', e));
         } else {
@@ -132,6 +127,11 @@ router.post('/', requireAuth, async (req, res) => {
       // Continue execution, don't fail the request
     }
 
+    // Amazon does not always send the product details. Say so, instead of saving a blank card without a word.
+    const warning = productInfo.title
+      ? {}
+      : { warning: 'Saved the link only, because Amazon did not send the product details.' };
+
     res.status(201).json({
       id: item.id,
       userId: item.user_id,
@@ -140,6 +140,7 @@ router.post('/', requireAuth, async (req, res) => {
       imageUrl: item.image_url,
       price: item.price,
       addedAt: item.added_at,
+      ...warning,
     });
   } catch (error) {
     console.error('Add wishlist item error:', error);
@@ -158,7 +159,7 @@ router.get('/recipient', requireAuth, async (req, res) => {
 
     // Get match for current year
     const match = db
-      .prepare<[number, number], Match>(
+      .prepare<Match, [number, number]>(
         'SELECT * FROM matches WHERE giver_id = ? AND year = ?'
       )
       .get(userId, currentYear);
@@ -170,7 +171,7 @@ router.get('/recipient', requireAuth, async (req, res) => {
 
     // Get recipient's user information
     const recipient = db
-      .prepare<[number], User>('SELECT * FROM users WHERE id = ?')
+      .prepare<User, [number]>('SELECT * FROM users WHERE id = ?')
       .get(match.receiver_id);
 
     if (!recipient) {
@@ -180,7 +181,7 @@ router.get('/recipient', requireAuth, async (req, res) => {
 
     // Get recipient's wishlist
     const items = db
-      .prepare<[number], WishlistItem>(
+      .prepare<WishlistItem, [number]>(
         'SELECT * FROM wishlist_items WHERE user_id = ? ORDER BY added_at DESC'
       )
       .all(match.receiver_id);
@@ -221,7 +222,7 @@ router.delete('/:id', requireAuth, async (req, res) => {
 
     // Verify item belongs to user
     const item = db
-      .prepare<[number], WishlistItem>('SELECT * FROM wishlist_items WHERE id = ?')
+      .prepare<WishlistItem, [number]>('SELECT * FROM wishlist_items WHERE id = ?')
       .get(itemId);
 
     if (!item) {

@@ -8,6 +8,7 @@ import type {
   UpdateUserRequest,
   UpdateUserResponse,
   ResetPasswordResponse,
+  DeleteUserResponse,
   AdminMatchesResponse,
 } from '@/types';
 
@@ -19,7 +20,7 @@ interface UseAdminReturn {
   fetchUsers: () => Promise<void>;
   createUser: (data: CreateUserRequest) => Promise<CreateUserResponse>;
   updateUser: (id: number, data: UpdateUserRequest) => Promise<AdminUser>;
-  deleteUser: (id: number) => Promise<void>;
+  deleteUser: (id: number) => Promise<DeleteUserResponse>;
   resetPassword: (id: number) => Promise<string>;
 
   // Matches
@@ -90,10 +91,11 @@ export function useAdmin(): UseAdminReturn {
 
   // Delete user
   const deleteUser = useCallback(
-    async (id: number): Promise<void> => {
+    async (id: number): Promise<DeleteUserResponse> => {
       try {
-        await api.delete<{ success: boolean }>(`/admin/users/${id}`);
+        const result = await api.delete<DeleteUserResponse>(`/admin/users/${id}`);
         await fetchUsers(); // Refresh list
+        return result;
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to delete user';
         throw new Error(message);

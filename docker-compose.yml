@@ -10,6 +10,6 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3001
-      - CLIENT_URL=${CLIENT_URL:-http://localhost:5173}
+      - CLIENT_URL=${CLIENT_URL:-http://localhost:3001}
     volumes:
       - ./data:/app/data

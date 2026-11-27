@@ -3,32 +3,25 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "tsx watch index.ts",
-    "build": "tsc",
-    "start": "node dist/index.js",
-    "create-admin": "tsx scripts/create-admin.ts"
+    "dev": "bun --watch index.ts",
+    "start": "bun index.ts",
+    "typecheck": "tsc --noEmit",
+    "create-admin": "bun scripts/create-admin.ts"
   },
   "dependencies": {
-    "bcrypt": "^5.1.1",
-    "better-sqlite3": "^9.4.0",
     "cheerio": "^1.0.0-rc.12",
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^4.18.2",
-    "nodemailer": "^7.0.11",
-    "uuid": "^9.0.0"
+    "nodemailer": "^7.0.11"
   },
   "devDependencies": {
-    "@types/bcrypt": "^5.0.2",
-    "@types/better-sqlite3": "^7.6.8",
+    "@types/bun": "^1.4.5",
     "@types/cookie-parser": "^1.4.6",
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
-    "@types/node": "^20.11.0",
     "@types/nodemailer": "^7.0.4",
-    "@types/uuid": "^9.0.0",
-    "tsx": "^4.21.0",
     "typescript": "^5.3.0"
   }
 }
